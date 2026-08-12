@@ -1,0 +1,58 @@
+[project]
+name = "openbase-cli"
+description = "Openbase Cloud CLI — Heroku-style access to Openbase PaaS app logs, status, config, and releases"
+authors = [{ name = "Openbase", email = "hello@openbase.dev" }]
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dynamic = ["version"]
+dependencies = [
+    "click>=8.1.8",
+    "httpx>=0.28.1",
+    "rich>=13.7",
+]
+
+[project.scripts]
+openbase = "openbase_cli.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-mock>=3.14.0",
+    "respx>=0.22",
+    "ruff>=0.11.10",
+]
+
+[project.urls]
+Homepage = "https://openbase.cloud"
+Repository = "https://github.com/openbase-community/openbase-cli"
+Issues = "https://github.com/openbase-community/openbase-cli/issues"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { fallback_version = "0.0.0" }
+
+[tool.hatch.build.hooks.vcs]
+version-file = "openbase_cli/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["openbase_cli"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+# Generated at build time by hatch-vcs.
+extend-exclude = ["openbase_cli/_version.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "W", "C90", "UP", "RUF"]
+ignore = ["C901", "E501"]
+fixable = ["ALL"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

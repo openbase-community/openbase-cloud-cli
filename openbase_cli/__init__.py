@@ -1,0 +1,1 @@
+"""Openbase Cloud CLI."""
