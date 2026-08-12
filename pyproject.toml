@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-openbase = "openbase_cli.cli:main"
+openbase-deploy = "openbase_cli.cli:main"
 
 [project.optional-dependencies]
 dev = [

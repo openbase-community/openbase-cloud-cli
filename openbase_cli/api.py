@@ -42,7 +42,7 @@ class Client:
             raise ApiError(f"Could not reach Openbase Cloud: {exc}") from exc
 
         if resp.status_code == 401:
-            raise LoginRequiredError("Login expired. Run 'openbase login' again.")
+            raise LoginRequiredError("Login expired. Run 'openbase-deploy login' again.")
         if resp.status_code == 403:
             raise ApiError("You do not have access to that resource.", status_code=403)
         if resp.status_code == 404:

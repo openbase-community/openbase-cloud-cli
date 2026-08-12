@@ -3,7 +3,7 @@
 Credentials live in the shared ``~/.openbase/auth.json`` written by the
 Openbase Coder CLI. This module reads that file, refreshes the short-lived JWT
 access token against Openbase Cloud's allauth endpoint when needed, and (for
-``openbase login``) runs the same browser OAuth+PKCE flow the coder CLI uses so
+``openbase-deploy login``) runs the same browser OAuth+PKCE flow the coder CLI uses so
 either tool can establish the shared session.
 
 Only the subset needed by a read-mostly PaaS client is implemented here; the
@@ -31,7 +31,7 @@ class AuthError(Exception):
 
 
 class LoginRequiredError(AuthError):
-    """No usable credentials; the user must run ``openbase login``."""
+    """No usable credentials; the user must run ``openbase-deploy login``."""
 
 
 class AuthTransientError(AuthError):
@@ -134,7 +134,7 @@ class TokenManager:
         if self._access_is_valid():
             return self._access_token
         if not self._refresh_token:
-            raise LoginRequiredError("Not logged in. Run 'openbase login' first.")
+            raise LoginRequiredError("Not logged in. Run 'openbase-deploy login' first.")
         self._refresh()
         return self._access_token
 
@@ -146,7 +146,7 @@ class TokenManager:
             raise AuthTransientError(f"Token refresh failed: {exc}") from exc
 
         if resp.status_code in (400, 401, 403):
-            raise LoginRequiredError("Login expired. Run 'openbase login' again.")
+            raise LoginRequiredError("Login expired. Run 'openbase-deploy login' again.")
         if resp.status_code >= 500:
             raise AuthTransientError(f"Token refresh failed (status {resp.status_code}).")
         resp.raise_for_status()

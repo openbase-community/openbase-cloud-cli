@@ -1,4 +1,4 @@
-"""``openbase ps`` / ``status`` — show an app's current stack status."""
+"""``openbase-deploy ps`` / ``status`` — show an app's current stack status."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""``openbase login`` / ``logout`` / ``whoami``."""
+"""``openbase-deploy login`` / ``logout`` / ``whoami``."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def whoami() -> None:
     """Show the currently logged-in Openbase Cloud account."""
     manager = TokenManager()
     if not manager.is_logged_in:
-        raise LoginRequiredError("Not logged in. Run 'openbase login' first.")
+        raise LoginRequiredError("Not logged in. Run 'openbase-deploy login' first.")
     try:
         manager.get_access_token()  # forces a refresh, validating the session
     except AuthError:

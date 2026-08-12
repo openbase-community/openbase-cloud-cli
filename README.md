@@ -1,55 +1,50 @@
-# Openbase CLI
+# openbase-deploy
 
-A Heroku-style command line for the **Openbase Cloud** PaaS. Log in once, then
-read your apps' **logs**, **status**, **config**, and **releases** from the
-terminal. It speaks only HTTPS to the Openbase Cloud API — no AWS credentials
-required.
-
-> This is the public, PaaS-facing CLI. The internal deployment engine (the
-> Terraform app stack and the library the deploy runner uses, plus the retired
-> manual `openbase-deploy` tool) lives in the separate, non-public `deploy`
-> repo.
+The command line for the **[Openbase Cloud](https://openbase.cloud)** PaaS.
+Log in once, then read your apps' **logs**, **status**, **config**, and
+**releases** right from your terminal. Heroku-style, over HTTPS — no cloud
+credentials to configure.
 
 ## Install
 
 ```bash
-pip install openbase-cli    # provides the `openbase` command
-# or, from a checkout:
-uv run openbase --help
+pip install openbase-cli
 ```
+
+This installs the `openbase-deploy` command. (Prefer [uv](https://docs.astral.sh/uv/)?
+`uv tool install openbase-cli`.)
 
 ## Log in
 
 ```bash
-openbase login
+openbase-deploy login
 ```
 
-This opens your browser and stores credentials in `~/.openbase/auth.json`. That
-file is **shared with the Openbase Coder CLI** — if you're already logged in
-there, `openbase` is ready to go, and vice versa.
+This opens your browser to sign in and saves your credentials locally. It
+shares a session with the [Openbase Coder](https://openbase.cloud) CLI — if
+you're already signed in there, you're ready to go here too, and vice versa.
 
 ```bash
-openbase whoami     # show the logged-in account
-openbase logout     # clear credentials
+openbase-deploy whoami     # show the signed-in account
+openbase-deploy logout     # sign out
 ```
 
 ## Everyday commands
 
-An "app" is a deployed resource in your Openbase Cloud project. Address it with
-`-a/--app NAME`, or set `OPENBASE_APP` once.
+Address an app with `-a/--app NAME`, or set `OPENBASE_APP` once.
 
 ```bash
-openbase apps                       # list apps you can access
-openbase logs -a my-app             # recent logs
-openbase logs -a my-app --tail      # stream new lines (Ctrl-C to stop)
-openbase logs -a my-app -n 60       # last 60 minutes
-openbase ps -a my-app               # current stack status (alias: status)
-openbase config -a my-app           # config vars (secret values are hidden)
-openbase releases -a my-app         # recent deploy runs
-openbase open -a my-app             # open the app URL in a browser
+openbase-deploy apps                    # list your apps
+openbase-deploy logs -a my-app          # recent logs
+openbase-deploy logs -a my-app --tail   # stream new lines (Ctrl-C to stop)
+openbase-deploy logs -a my-app -n 60    # last 60 minutes
+openbase-deploy ps -a my-app            # current status (alias: status)
+openbase-deploy config -a my-app        # config vars (secret values hidden)
+openbase-deploy releases -a my-app      # recent deploys
+openbase-deploy open -a my-app          # open the app in your browser
 ```
 
-Most commands accept `--json` for scripting.
+Add `--json` to most commands for scripting.
 
 ## Configuration
 
@@ -61,9 +56,9 @@ Most commands accept `--json` for scripting.
 
 ## Notes
 
-- Logs currently surface recent **error-level** lines from an app's server
-  stack. `--tail` re-queries and prints only new lines.
-- Secret config values are never returned by the API; manage them in the
+- `logs` shows recent lines from your app's server logs; `--tail` keeps polling
+  and prints new lines as they arrive.
+- Secret config values are never sent back over the API — manage them from the
   Openbase Cloud dashboard.
 
 ## Development
@@ -72,3 +67,7 @@ Most commands accept `--json` for scripting.
 uv run --extra dev pytest
 uv run --extra dev ruff check .
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
