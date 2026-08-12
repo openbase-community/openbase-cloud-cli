@@ -1,9 +1,8 @@
 name: Publish to PyPI
 
 # Tag-driven release: push a `v*` tag (e.g. v0.1.0) and this builds the
-# package and publishes it to PyPI via trusted publishing (OIDC — no API
-# token secret). PyPI must have this repository + workflow registered as a
-# trusted publisher for the `openbase-cli` project.
+# package and publishes it to PyPI using the PYPI_API_TOKEN repository
+# secret.
 
 on:
   push:
@@ -46,12 +45,11 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
