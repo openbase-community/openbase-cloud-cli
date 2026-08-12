@@ -70,6 +70,17 @@ openbase coder <args>       # runs `openbase-coder <args>`
 
 Add `--json` to most commands for scripting.
 
+## Documentation
+
+Full docs live at **[docs-cloud.openbase.cloud](https://docs-cloud.openbase.cloud)**
+(built from `docs/` with [zensical](https://zensical.org)). Build or serve them
+locally:
+
+```bash
+uvx zensical serve     # live preview
+uvx zensical build     # static site into ./site
+```
+
 ## Development
 
 ```bash

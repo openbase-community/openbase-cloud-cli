@@ -1,0 +1,39 @@
+[project]
+site_name = "Openbase Cloud CLI"
+site_description = "Use the openbase command: a Heroku-style CLI for the Openbase Cloud PaaS — apps, deploys, logs, config, releases, usage, and projects from your terminal"
+site_url = "https://docs-cloud.openbase.cloud"
+site_author = "Openbase"
+repo_url = "https://github.com/openbase-community/openbase-cloud-cli"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting Started" = "getting-started.md" },
+  { "Configuration" = "configuration.md" },
+  { "Commands" = [
+    "commands/index.md",
+    { "login" = "commands/login.md" },
+    { "logout" = "commands/logout.md" },
+    { "whoami" = "commands/whoami.md" },
+    { "account" = "commands/account.md" },
+    { "apps" = "commands/apps.md" },
+    { "open" = "commands/open.md" },
+    { "logs" = "commands/logs.md" },
+    { "ps" = "commands/ps.md" },
+    { "config" = "commands/config.md" },
+    { "releases" = "commands/releases.md" },
+    { "usage" = "commands/usage.md" },
+    { "projects" = "commands/projects.md" },
+    { "workspaces" = "commands/workspaces.md" },
+    { "coder" = "commands/coder.md" }
+  ]}
+]
+
+[project.theme]
+variant = "modern"
+features = [
+  "navigation.instant",
+  "navigation.expand",
+  "navigation.path",
+  "navigation.indexes",
+  "content.code.copy"
+]

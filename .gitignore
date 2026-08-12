@@ -16,3 +16,6 @@ openbase_cli/_version.py
 
 # OS
 .DS_Store
+
+# zensical docs build output
+/site
