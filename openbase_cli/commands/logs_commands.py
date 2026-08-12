@@ -1,4 +1,4 @@
-"""``openbase-deploy logs`` — read (and tail) app logs, Heroku-style."""
+"""``openbase logs`` — read (and tail) app logs, Heroku-style."""
 
 from __future__ import annotations
 

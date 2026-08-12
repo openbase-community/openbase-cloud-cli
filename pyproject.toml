@@ -1,6 +1,6 @@
 [project]
 name = "openbase-cli"
-description = "Openbase Cloud CLI — Heroku-style access to Openbase PaaS app logs, status, config, and releases"
+description = "Openbase Cloud CLI — a Heroku-style command line for the Openbase Cloud PaaS (apps, logs, config, usage, workspaces) and an alternative to the web dashboard"
 authors = [{ name = "Openbase", email = "hello@openbase.dev" }]
 readme = "README.md"
 license = "MIT"
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-openbase-deploy = "openbase_cli.cli:main"
+openbase = "openbase_cli.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -25,8 +25,8 @@ dev = [
 
 [project.urls]
 Homepage = "https://openbase.cloud"
-Repository = "https://github.com/openbase-community/openbase-cli"
-Issues = "https://github.com/openbase-community/openbase-cli/issues"
+Repository = "https://github.com/openbase-community/openbase-cloud-cli"
+Issues = "https://github.com/openbase-community/openbase-cloud-cli/issues"
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]

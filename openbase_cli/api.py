@@ -42,7 +42,7 @@ class Client:
             raise ApiError(f"Could not reach Openbase Cloud: {exc}") from exc
 
         if resp.status_code == 401:
-            raise LoginRequiredError("Login expired. Run 'openbase-deploy login' again.")
+            raise LoginRequiredError("Login expired. Run 'openbase login' again.")
         if resp.status_code == 403:
             raise ApiError("You do not have access to that resource.", status_code=403)
         if resp.status_code == 404:
@@ -75,6 +75,22 @@ class Client:
 
     def resource_config_vars(self, resource_id: str) -> list[dict[str, Any]]:
         data = self._request("GET", f"{_BASE_PATH}/resources/{resource_id}/config-vars/")
+        return data if isinstance(data, list) else data.get("results", [])
+
+    # -- account / workspace / usage --------------------------------------
+
+    def me(self) -> dict[str, Any]:
+        return self._request("GET", "/api/users/me/")
+
+    def usage(self) -> dict[str, Any]:
+        return self._request("GET", "/api/openbase/usage/")
+
+    def devspaces(self) -> list[dict[str, Any]]:
+        data = self._request("GET", "/api/openbase/devspaces/")
+        return data if isinstance(data, list) else data.get("results", [])
+
+    def projects(self) -> list[dict[str, Any]]:
+        data = self._request("GET", "/api/openbase/projects/")
         return data if isinstance(data, list) else data.get("results", [])
 
 

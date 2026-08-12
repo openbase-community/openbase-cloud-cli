@@ -1,4 +1,4 @@
-"""``openbase-deploy releases`` — recent deploy runs for an app."""
+"""``openbase releases`` — recent deploy runs for an app."""
 
 from __future__ import annotations
 

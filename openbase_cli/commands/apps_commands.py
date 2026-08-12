@@ -1,4 +1,4 @@
-"""``openbase-deploy apps`` — list the apps you can access."""
+"""``openbase apps`` — list the apps you can access."""
 
 from __future__ import annotations
 

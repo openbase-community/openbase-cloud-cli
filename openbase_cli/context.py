@@ -12,6 +12,7 @@ from rich.console import Console
 from openbase_cli.api import ApiError, Client
 from openbase_cli.apps import AppResolutionError
 from openbase_cli.auth import AuthError, LoginRequiredError, TokenManager
+from openbase_cli.coder import CoderNotInstalledError
 
 # Data goes to stdout (pipe-friendly); human status/errors go to stderr.
 out = Console()
@@ -38,7 +39,7 @@ def handle_errors(func: F) -> F:
         except LoginRequiredError as exc:
             err.print(f"[red]{exc}[/red]")
             raise SystemExit(1) from exc
-        except (AuthError, ApiError, AppResolutionError) as exc:
+        except (AuthError, ApiError, AppResolutionError, CoderNotInstalledError) as exc:
             err.print(f"[red]Error:[/red] {exc}")
             raise SystemExit(1) from exc
 

@@ -1,50 +1,64 @@
-# openbase-deploy
+# openbase
 
-The command line for the **[Openbase Cloud](https://openbase.cloud)** PaaS.
-Log in once, then read your apps' **logs**, **status**, **config**, and
-**releases** right from your terminal. Heroku-style, over HTTPS — no cloud
-credentials to configure.
+The command line for **[Openbase Cloud](https://openbase.cloud)** — a
+Heroku-style tool and a fast alternative to the web dashboard. Sign in once,
+then manage and inspect your apps, deploys, usage, projects, and workspaces
+from the terminal. It speaks only HTTPS to the Openbase Cloud API.
 
 ## Install
 
 ```bash
-pip install openbase-cli
+pip install openbase-cli    # provides the `openbase` command
+# or:  uv tool install openbase-cli
 ```
 
-This installs the `openbase-deploy` command. (Prefer [uv](https://docs.astral.sh/uv/)?
-`uv tool install openbase-cli`.)
-
-## Log in
+## Sign in
 
 ```bash
-openbase-deploy login
+openbase login
 ```
 
-This opens your browser to sign in and saves your credentials locally. It
-shares a session with the [Openbase Coder](https://openbase.cloud) CLI — if
-you're already signed in there, you're ready to go here too, and vice versa.
+Login is handled by the [Openbase Coder](https://openbase.cloud) CLI
+(`openbase-coder`), which the two tools share — `openbase login` runs
+`openbase-coder login` and stores credentials in `~/.openbase/auth.json`, so
+signing in with either tool signs you in for both. Install `openbase-coder`
+first if you don't have it.
 
 ```bash
-openbase-deploy whoami     # show the signed-in account
-openbase-deploy logout     # sign out
+openbase whoami     # signed-in email
+openbase account    # account details (balance, subscription)
+openbase logout     # sign out
 ```
 
-## Everyday commands
+## Apps & deploys
 
-Address an app with `-a/--app NAME`, or set `OPENBASE_APP` once.
+Address an app with `-a/--app NAME`, or set `OPENBASE_APP`.
 
 ```bash
-openbase-deploy apps                    # list your apps
-openbase-deploy logs -a my-app          # recent logs
-openbase-deploy logs -a my-app --tail   # stream new lines (Ctrl-C to stop)
-openbase-deploy logs -a my-app -n 60    # last 60 minutes
-openbase-deploy ps -a my-app            # current status (alias: status)
-openbase-deploy config -a my-app        # config vars (secret values hidden)
-openbase-deploy releases -a my-app      # recent deploys
-openbase-deploy open -a my-app          # open the app in your browser
+openbase apps                       # list your apps
+openbase logs -a my-app             # recent logs
+openbase logs -a my-app --tail      # stream new lines (Ctrl-C to stop)
+openbase ps -a my-app               # current status (alias: status)
+openbase config -a my-app           # config vars (secret values hidden)
+openbase releases -a my-app         # recent deploys
+openbase open -a my-app             # open the app in your browser
 ```
 
-Add `--json` to most commands for scripting.
+## Account, projects & workspaces
+
+```bash
+openbase usage        # this month's spend and limits
+openbase projects     # your Openbase Cloud projects
+openbase workspaces   # your cloud dev workspaces (devspaces) and status
+```
+
+## Coder passthrough
+
+Anything not covered here can be run against the Coder CLI directly:
+
+```bash
+openbase coder <args>       # runs `openbase-coder <args>`
+```
 
 ## Configuration
 
@@ -54,12 +68,7 @@ Add `--json` to most commands for scripting.
 | `OPENBASE_API_URL` | Override the Openbase Cloud base URL | `https://app.openbase.cloud` |
 | `OPENBASE_HOST` | Alias for `OPENBASE_API_URL` | — |
 
-## Notes
-
-- `logs` shows recent lines from your app's server logs; `--tail` keeps polling
-  and prints new lines as they arrive.
-- Secret config values are never sent back over the API — manage them from the
-  Openbase Cloud dashboard.
+Add `--json` to most commands for scripting.
 
 ## Development
 

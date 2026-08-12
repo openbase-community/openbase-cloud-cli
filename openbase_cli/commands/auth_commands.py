@@ -1,53 +1,34 @@
-"""``openbase-deploy login`` / ``logout`` / ``whoami``."""
+"""``openbase login`` / ``logout`` / ``whoami`` and the ``coder`` passthrough."""
 
 from __future__ import annotations
 
 import click
-import httpx
 
-from openbase_cli import config, login_flow
-from openbase_cli.auth import AuthError, LoginRequiredError, TokenManager
-from openbase_cli.context import err, handle_errors, out
+from openbase_cli import config
+from openbase_cli.auth import LoginRequiredError, TokenManager
+from openbase_cli.coder import run_coder
+from openbase_cli.context import handle_errors, out
 
 
-@click.command()
-@click.option(
-    "--no-browser", is_flag=True, help="Print the login URL instead of opening a browser."
-)
-def login(no_browser: bool) -> None:
-    """Log in to Openbase Cloud in your browser.
+@click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@handle_errors
+def login(args: tuple[str, ...]) -> None:
+    """Log in to Openbase Cloud.
 
-    Shares its session with the Openbase Coder CLI: credentials are written to
-    ~/.openbase/auth.json, so logging in here logs you in for both.
+    Delegates to `openbase-coder login`, which owns the shared browser sign-in
+    and writes credentials to ~/.openbase/auth.json (used by both CLIs).
     """
-    host = config.host()
-    try:
-        access, refresh, expires_in = login_flow.run_browser_login(
-            host=host, echo=err.print, open_browser=not no_browser
-        )
-    except httpx.HTTPStatusError as exc:
-        err.print(f"[red]OAuth login failed:[/red] {login_flow.format_http_error(exc)}")
-        raise SystemExit(1) from None
-    except (RuntimeError, httpx.HTTPError) as exc:
-        err.print(f"[red]OAuth login failed:[/red] {exc}")
-        raise SystemExit(1) from None
-
-    TokenManager(host).store_tokens(
-        access_token=access, refresh_token=refresh, expires_in=expires_in
-    )
-    email = TokenManager(host).owner_email()
-    suffix = f" as [bold]{email}[/bold]" if email else ""
-    out.print(f"Logged in{suffix}.")
+    raise SystemExit(run_coder(["login", *args]))
 
 
 @click.command()
 def logout() -> None:
     """Log out and remove the shared Openbase Cloud credentials."""
-    manager = TokenManager()
     if not config.AUTH_JSON_PATH.is_file():
         out.print("Not logged in.")
         return
-    manager.clear()
+    TokenManager().clear()
     out.print("Logged out. Credentials removed from ~/.openbase/auth.json.")
 
 
@@ -57,10 +38,19 @@ def whoami() -> None:
     """Show the currently logged-in Openbase Cloud account."""
     manager = TokenManager()
     if not manager.is_logged_in:
-        raise LoginRequiredError("Not logged in. Run 'openbase-deploy login' first.")
-    try:
-        manager.get_access_token()  # forces a refresh, validating the session
-    except AuthError:
-        raise
+        raise LoginRequiredError("Not logged in. Run 'openbase login' first.")
+    manager.get_access_token()  # forces a refresh, validating the session
     email = manager.owner_email()
     out.print(email or "Logged in (account email unavailable).")
+
+
+@click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@handle_errors
+def coder(args: tuple[str, ...]) -> None:
+    """Run the Openbase Coder CLI: `openbase coder <args>`.
+
+    A thin passthrough to the separate `openbase-coder` executable (devspaces,
+    agents, and more). Requires openbase-coder to be installed.
+    """
+    raise SystemExit(run_coder(list(args)))

@@ -1,4 +1,4 @@
-"""``openbase-deploy config`` — read an app's config vars."""
+"""``openbase config`` — read an app's config vars."""
 
 from __future__ import annotations
 
