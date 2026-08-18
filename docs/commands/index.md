@@ -37,6 +37,7 @@ terminal path to the same account and apps.
 | [`logs`](logs.md) | Display and tail recent app logs |
 | [`ps`](ps.md) | Show an app's current stack status (alias: `status`) |
 | [`config`](config.md) | List an app's config vars (secrets hidden) |
+| [`health-check`](health-check.md) | View or set the web health-check path |
 | [`releases`](releases.md) | List recent deploy runs (releases) for an app |
 
 ## Account-Wide Resources

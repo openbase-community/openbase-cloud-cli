@@ -20,6 +20,7 @@ nav = [
     { "logs" = "commands/logs.md" },
     { "ps" = "commands/ps.md" },
     { "config" = "commands/config.md" },
+    { "health-check" = "commands/health-check.md" },
     { "releases" = "commands/releases.md" },
     { "usage" = "commands/usage.md" },
     { "projects" = "commands/projects.md" },

@@ -40,6 +40,7 @@ openbase logs -a my-app             # recent logs
 openbase logs -a my-app --tail      # stream new lines (Ctrl-C to stop)
 openbase ps -a my-app               # current status (alias: status)
 openbase config -a my-app           # config vars (secret values hidden)
+openbase health-check -a my-app     # web health-check path (zero-downtime probes)
 openbase releases -a my-app         # recent deploys
 openbase open -a my-app             # open the app in your browser
 ```
