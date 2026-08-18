@@ -15,6 +15,7 @@ from openbase_cli.commands.account_commands import account
 from openbase_cli.commands.apps_commands import apps, open_app
 from openbase_cli.commands.auth_commands import coder, login, logout, whoami
 from openbase_cli.commands.config_commands import config as config_cmd
+from openbase_cli.commands.health_commands import health_check
 from openbase_cli.commands.logs_commands import logs
 from openbase_cli.commands.project_commands import projects
 from openbase_cli.commands.ps_commands import ps, status
@@ -61,6 +62,7 @@ main.add_command(logs)
 main.add_command(ps)
 main.add_command(status)
 main.add_command(config_cmd)
+main.add_command(health_check)
 main.add_command(releases)
 
 # Account-wide resources

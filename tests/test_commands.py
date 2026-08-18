@@ -141,3 +141,38 @@ def test_unknown_app_errors(logged_in):
     result = CliRunner().invoke(main, ["logs", "-a", "ghost"])
     assert result.exit_code == 1
     assert "No app named 'ghost'" in result.output
+
+
+@respx.mock
+def test_health_check_shows_platform_default(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/stacks/stack-1/status/").mock(
+        return_value=httpx.Response(200, json={"web_health_check_path": ""})
+    )
+    result = CliRunner().invoke(main, ["health-check", "-a", "api"])
+    assert result.exit_code == 0, result.output
+    assert "/api/csrf/ (platform default)" in result.output
+
+
+@respx.mock
+def test_health_check_sets_path(logged_in):
+    _mock_dashboard()
+    route = respx.patch(f"{API}/stacks/stack-1/").mock(
+        return_value=httpx.Response(200, json={"web_health_check_path": "/healthz"})
+    )
+    result = CliRunner().invoke(main, ["health-check", "/healthz", "-a", "api"])
+    assert result.exit_code == 0, result.output
+    assert route.called
+    assert "set to /healthz" in result.output
+    assert "next infrastructure apply" in result.output
+
+
+@respx.mock
+def test_health_check_unset(logged_in):
+    _mock_dashboard()
+    respx.patch(f"{API}/stacks/stack-1/").mock(
+        return_value=httpx.Response(200, json={"web_health_check_path": ""})
+    )
+    result = CliRunner().invoke(main, ["health-check", "--unset", "-a", "api"])
+    assert result.exit_code == 0, result.output
+    assert "platform" in result.output

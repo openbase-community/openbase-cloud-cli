@@ -69,6 +69,11 @@ class Client:
     def stack_status(self, stack_id: str) -> dict[str, Any]:
         return self._request("GET", f"{_BASE_PATH}/stacks/{stack_id}/status/")
 
+    def stack_update(self, stack_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request(
+            "PATCH", f"{_BASE_PATH}/stacks/{stack_id}/", json=payload
+        )
+
     def resource_runs(self, resource_id: str) -> list[dict[str, Any]]:
         data = self._request("GET", f"{_BASE_PATH}/resources/{resource_id}/runs/")
         return data if isinstance(data, list) else data.get("results", [])
