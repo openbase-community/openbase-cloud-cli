@@ -18,6 +18,7 @@ nav = [
     { "apps" = "commands/apps.md" },
     { "open" = "commands/open.md" },
     { "logs" = "commands/logs.md" },
+    { "run" = "commands/run.md" },
     { "ps" = "commands/ps.md" },
     { "config" = "commands/config.md" },
     { "health-check" = "commands/health-check.md" },

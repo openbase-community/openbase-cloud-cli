@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import re
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -17,6 +18,22 @@ from openbase_cli.coder import CoderNotInstalledError
 # Data goes to stdout (pipe-friendly); human status/errors go to stderr.
 out = Console()
 err = Console(stderr=True)
+
+# C0 controls (except tab), DEL, and C1 controls. Log and command output can
+# contain visitor-controlled bytes (request paths, user agents, form fields);
+# left unfiltered, an app's visitor could plant ANSI/OSC escape sequences that
+# the developer's terminal then executes when they read logs — retitling the
+# window, clearing the screen, or spoofing output. Stripping also drops color
+# codes; plain text is the safe default for remote content.
+_TERMINAL_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f\x80-\x9f]")
+
+
+def print_remote_line(line: str) -> None:
+    """Print one line of remote app output (logs, run results) with terminal
+    control characters stripped so remote content cannot inject escape
+    sequences into the user's terminal."""
+    out.print(_TERMINAL_CONTROL_CHARS.sub("", str(line)), markup=False, highlight=False)
+
 
 F = TypeVar("F", bound=Callable[..., Any])
 

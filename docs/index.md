@@ -44,6 +44,7 @@ Apps & deploys:
 - [`apps`](commands/apps.md) — list the apps you can access
 - [`open`](commands/open.md) — open an app's URL in your browser
 - [`logs`](commands/logs.md) — read and tail app logs
+- [`run`](commands/run.md) — run a one-off command in an app container
 - [`ps`](commands/ps.md) (alias `status`) — an app's current stack status
 - [`config`](commands/config.md) — an app's config vars
 - [`releases`](commands/releases.md) — recent deploy runs

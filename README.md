@@ -37,7 +37,9 @@ Address an app with `-a/--app NAME`, or set `OPENBASE_APP`.
 ```bash
 openbase apps                       # list your apps
 openbase logs -a my-app             # recent logs
+openbase logs -a my-app --lines 200 # more log lines
 openbase logs -a my-app --tail      # stream new lines (Ctrl-C to stop)
+openbase run -a my-app python manage.py migrate   # one-off command in the web container
 openbase ps -a my-app               # current status (alias: status)
 openbase config -a my-app           # config vars (secret values hidden)
 openbase health-check -a my-app     # web health-check path (zero-downtime probes)

@@ -20,6 +20,7 @@ from openbase_cli.commands.logs_commands import logs
 from openbase_cli.commands.project_commands import projects
 from openbase_cli.commands.ps_commands import ps, status
 from openbase_cli.commands.releases_commands import releases
+from openbase_cli.commands.run_commands import run_command
 from openbase_cli.commands.usage_commands import usage
 from openbase_cli.commands.workspace_commands import workspaces
 
@@ -64,6 +65,7 @@ main.add_command(status)
 main.add_command(config_cmd)
 main.add_command(health_check)
 main.add_command(releases)
+main.add_command(run_command)
 
 # Account-wide resources
 main.add_command(usage)

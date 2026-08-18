@@ -35,6 +35,7 @@ terminal path to the same account and apps.
 | [`apps`](apps.md) | List Openbase Cloud apps you can access |
 | [`open`](open.md) | Open an app's primary URL in your browser |
 | [`logs`](logs.md) | Display and tail recent app logs |
+| [`run`](run.md) | Run a one-off command in an app container |
 | [`ps`](ps.md) | Show an app's current stack status (alias: `status`) |
 | [`config`](config.md) | List an app's config vars (secrets hidden) |
 | [`health-check`](health-check.md) | View or set the web health-check path |
@@ -65,6 +66,7 @@ openbase whoami
 openbase apps
 openbase ps -a my-app
 openbase logs -a my-app --tail
+openbase run -a my-app python manage.py check
 openbase config -a my-app
 openbase releases -a my-app
 

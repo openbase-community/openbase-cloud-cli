@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import httpx
 import respx
 from click.testing import CliRunner
@@ -71,6 +73,101 @@ def test_logs_uses_since_minutes(logged_in):
     result = CliRunner().invoke(main, ["logs", "-a", "api", "-n", "42"])
     assert result.exit_code == 0, result.output
     assert route.calls.last.request.url.params["since_minutes"] == "42"
+
+
+@respx.mock
+def test_run_command_posts_oneoff_command(logged_in):
+    _mock_dashboard()
+    route = respx.post(f"{API}/stacks/stack-1/run/").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "task_arn": "arn:aws:ecs:us-east-1:123:task/projects/run",
+                "exit_code": 0,
+                "stopped_reason": "",
+                "lines": ["System check identified no issues."],
+            },
+        )
+    )
+
+    result = CliRunner().invoke(
+        main,
+        ["run", "-a", "api", "python", "manage.py", "check"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "System check identified no issues." in result.output
+    assert route.calls.last.request.content == (
+        b'{"command":["python","manage.py","check"],"shell_bin":"/bin/sh","memory":256}'
+    )
+
+
+@respx.mock
+def test_run_command_options_after_command_pass_through(logged_in):
+    # Flags that appear after COMMAND starts belong to the remote command, not
+    # the CLI: --memory here must reach the app, not resize the task.
+    _mock_dashboard()
+    route = respx.post(f"{API}/stacks/stack-1/run/").mock(
+        return_value=httpx.Response(
+            200,
+            json={"task_arn": "arn", "exit_code": 0, "stopped_reason": "", "lines": []},
+        )
+    )
+
+    result = CliRunner().invoke(
+        main,
+        ["run", "-a", "api", "./script.sh", "--memory", "512", "--shell-bin", "x"],
+    )
+
+    assert result.exit_code == 0, result.output
+    body = json.loads(route.calls.last.request.content)
+    assert body["command"] == ["./script.sh", "--memory", "512", "--shell-bin", "x"]
+    assert body["memory"] == 256
+    assert body["shell_bin"] == "/bin/sh"
+
+
+@respx.mock
+def test_run_command_missing_exit_code_is_failure(logged_in):
+    # A task that never ran to completion reports no exit code; that must not
+    # look like success.
+    _mock_dashboard()
+    respx.post(f"{API}/stacks/stack-1/run/").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "task_arn": "arn",
+                "exit_code": None,
+                "stopped_reason": "RESOURCE:MEMORY",
+                "lines": [],
+            },
+        )
+    )
+
+    result = CliRunner().invoke(main, ["run", "-a", "api", "true"])
+
+    assert result.exit_code != 0
+    assert "did not run to completion" in result.output
+    assert "RESOURCE:MEMORY" in result.output
+
+
+@respx.mock
+def test_logs_strips_terminal_escape_sequences(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/stacks/stack-1/logs/").mock(
+        return_value=httpx.Response(
+            200,
+            json={"lines": ["web: \x1b]0;pwned\x07\x1b[2Jhello\tworld"]},
+        )
+    )
+
+    result = CliRunner().invoke(main, ["logs", "-a", "api"])
+
+    assert result.exit_code == 0, result.output
+    assert "\x1b" not in result.output
+    assert "\x07" not in result.output
+    # Tabs survive (Rich renders them as spaces); the text is intact.
+    assert "hello" in result.output
+    assert "world" in result.output
 
 
 @respx.mock

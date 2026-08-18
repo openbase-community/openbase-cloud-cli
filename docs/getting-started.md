@@ -57,6 +57,7 @@ openbase ps                     # same as: openbase ps -a my-app
 openbase ps -a my-app           # current stack status (alias: status)
 openbase logs -a my-app         # recent logs (last 15 min by default)
 openbase logs -a my-app --tail  # stream new lines (Ctrl-C to stop)
+openbase run -a my-app python manage.py migrate  # one-off command
 openbase config -a my-app       # config vars (secret values hidden)
 openbase releases -a my-app     # recent deploy runs
 openbase open -a my-app         # open the app's URL in your browser
@@ -76,6 +77,7 @@ A typical loop after connecting a repo:
 git push origin main            # triggers a deploy run on Openbase Cloud
 openbase releases -a my-app     # watch the new run appear and progress
 openbase logs -a my-app --tail  # follow app logs during/after rollout
+openbase run -a my-app python manage.py check
 openbase ps -a my-app           # confirm the stack is healthy
 ```
 

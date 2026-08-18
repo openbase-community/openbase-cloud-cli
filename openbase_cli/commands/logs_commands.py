@@ -7,7 +7,7 @@ import time
 import click
 
 from openbase_cli.apps import require_stack_id, resolve_app
-from openbase_cli.context import app_option, err, handle_errors, make_client, out
+from openbase_cli.context import app_option, err, handle_errors, make_client, print_remote_line
 
 # How long to sleep between polls when tailing. The logs endpoint is a
 # windowed pull, not a stream, so we re-query and print only unseen lines.
@@ -26,26 +26,27 @@ _TAIL_INTERVAL_SECONDS = 3.0
     metavar="MINUTES",
     help="Show log lines from the last MINUTES minutes.",
 )
+@click.option("--lines", default=100, show_default=True, type=int, help="Maximum lines to show.")
+@click.option("--errors", is_flag=True, help="Only show likely error events.")
 @click.option(
     "-t", "--tail", is_flag=True, help="Continuously stream new log lines (Ctrl-C to stop)."
 )
 @handle_errors
-def logs(app_name: str | None, since_minutes: int, tail: bool) -> None:
+def logs(app_name: str | None, since_minutes: int, lines: int, errors: bool, tail: bool) -> None:
     """Display recent logs for an app.
 
-    Openbase Cloud currently surfaces recent error-level lines from the app's
-    server stack. Without --tail this prints one snapshot and exits.
+    Without --tail this prints one snapshot and exits.
     """
     client = make_client()
     app = resolve_app(client, app_name or "")
     stack_id = require_stack_id(app)
 
-    lines = client.stack_logs(stack_id, since_minutes=since_minutes)
-    for line in lines:
-        out.print(line, markup=False, highlight=False)
+    log_lines = client.stack_logs(stack_id, since_minutes=since_minutes, lines=lines, errors=errors)
+    for line in log_lines:
+        print_remote_line(line)
 
     if not tail:
-        if not lines:
+        if not log_lines:
             err.print(f"No log lines in the last {since_minutes} minute(s).")
         return
 
@@ -53,14 +54,19 @@ def logs(app_name: str | None, since_minutes: int, tail: bool) -> None:
     # Track the tail of what we have shown so repeated windows don't re-print
     # lines. Log lines are not guaranteed unique, so we de-dupe on a rolling
     # window rather than a set.
-    seen = list(lines)
+    seen = list(log_lines)
     try:
         while True:
             time.sleep(_TAIL_INTERVAL_SECONDS)
-            current = client.stack_logs(stack_id, since_minutes=max(since_minutes, 5))
+            current = client.stack_logs(
+                stack_id,
+                since_minutes=max(since_minutes, 5),
+                lines=lines,
+                errors=errors,
+            )
             fresh = _new_lines(seen, current)
             for line in fresh:
-                out.print(line, markup=False, highlight=False)
+                print_remote_line(line)
             if fresh:
                 seen = current[-500:]
     except KeyboardInterrupt:
