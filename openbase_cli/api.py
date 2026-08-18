@@ -90,14 +90,15 @@ class Client:
     ) -> dict[str, Any]:
         # The backend holds this request open while the one-off ECS task runs
         # to completion, which routinely takes minutes (migrations, imports).
-        # A generous read timeout keeps the CLI from abandoning a command that
-        # is still running server-side — re-running after a spurious client
-        # timeout could execute a non-idempotent command twice.
+        # Read timeout sits just past the server's 30-minute hard cap on the
+        # task so the CLI waits for the real outcome instead of abandoning a
+        # command that is still running server-side — re-running after a
+        # spurious client timeout could execute a non-idempotent command twice.
         return self._request(
             "POST",
             f"{_BASE_PATH}/stacks/{stack_id}/run/",
             json={"command": command, "shell_bin": shell_bin, "memory": memory},
-            timeout=httpx.Timeout(30, read=630),
+            timeout=httpx.Timeout(30, read=1860),
         )
 
     def stack_status(self, stack_id: str) -> dict[str, Any]:

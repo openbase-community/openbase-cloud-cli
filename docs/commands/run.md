@@ -19,7 +19,8 @@ login shell (PATH/venv) or shell features like pipes and `&&`.
 
 CLI options (`-a`, `--memory`, `--shell-bin`) must come **before** the command;
 everything after the first command word is passed to the container verbatim.
-The CLI waits up to ~10 minutes for the command to finish.
+The command is force-stopped after 30 minutes; the CLI waits that long for it
+to finish.
 
 ## Options
 
