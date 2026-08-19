@@ -107,6 +107,20 @@ class Client:
     def stack_update(self, stack_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("PATCH", f"{_BASE_PATH}/stacks/{stack_id}/", json=payload)
 
+    def get_stack_webhook(self, stack_id: str) -> dict[str, Any]:
+        return self._request("GET", f"{_BASE_PATH}/stacks/{stack_id}/webhook/") or {}
+
+    def set_stack_webhook(
+        self, stack_id: str, *, url: str, secret: str | None = None
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {"url": url}
+        if secret:
+            body["secret"] = secret
+        return self._request("PUT", f"{_BASE_PATH}/stacks/{stack_id}/webhook/", json=body)
+
+    def unset_stack_webhook(self, stack_id: str) -> None:
+        self._request("DELETE", f"{_BASE_PATH}/stacks/{stack_id}/webhook/")
+
     def resource_runs(self, resource_id: str) -> list[dict[str, Any]]:
         data = self._request("GET", f"{_BASE_PATH}/resources/{resource_id}/runs/")
         return data if isinstance(data, list) else data.get("results", [])

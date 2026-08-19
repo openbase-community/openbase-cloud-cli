@@ -23,6 +23,7 @@ nav = [
     { "config" = "commands/config.md" },
     { "health-check" = "commands/health-check.md" },
     { "releases" = "commands/releases.md" },
+    { "webhook" = "commands/webhook.md" },
     { "usage" = "commands/usage.md" },
     { "projects" = "commands/projects.md" },
     { "workspaces" = "commands/workspaces.md" },

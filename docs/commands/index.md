@@ -40,6 +40,7 @@ terminal path to the same account and apps.
 | [`config`](config.md) | View, set, and unset an app's config vars (secrets in dashboard) |
 | [`health-check`](health-check.md) | View or set the web health-check path |
 | [`releases`](releases.md) | List recent deploy runs (releases) for an app |
+| [`webhook`](webhook.md) | Manage the pool's release-notification webhook |
 
 ## Account-Wide Resources
 

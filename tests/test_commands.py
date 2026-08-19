@@ -245,6 +245,56 @@ def test_config_set_rejects_bad_pair(logged_in):
 
 
 @respx.mock
+def test_webhook_set(logged_in):
+    _mock_dashboard()
+    route = respx.put(f"{API}/stacks/stack-1/webhook/").mock(
+        return_value=httpx.Response(200, json={"url": "https://h.example/x", "secret": "abc123"})
+    )
+    result = CliRunner().invoke(main, ["webhook", "set", "-a", "api", "https://h.example/x"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(route.calls.last.request.content) == {"url": "https://h.example/x"}
+    assert "abc123" in result.output  # secret shown so the user can verify signatures
+
+
+@respx.mock
+def test_webhook_set_with_explicit_secret(logged_in):
+    _mock_dashboard()
+    route = respx.put(f"{API}/stacks/stack-1/webhook/").mock(
+        return_value=httpx.Response(200, json={"url": "https://h.example/x", "secret": "mine"})
+    )
+    result = CliRunner().invoke(
+        main, ["webhook", "set", "-a", "api", "https://h.example/x", "--secret", "mine"]
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(route.calls.last.request.content) == {
+        "url": "https://h.example/x",
+        "secret": "mine",
+    }
+
+
+@respx.mock
+def test_webhook_show(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/stacks/stack-1/webhook/").mock(
+        return_value=httpx.Response(200, json={"url": "https://h.example/x", "secret": "abc123"})
+    )
+    result = CliRunner().invoke(main, ["webhook", "-a", "api"])
+    assert result.exit_code == 0, result.output
+    assert "https://h.example/x" in result.output
+
+
+@respx.mock
+def test_webhook_unset(logged_in):
+    _mock_dashboard()
+    route = respx.delete(f"{API}/stacks/stack-1/webhook/").mock(
+        return_value=httpx.Response(200, json={"detail": "Release webhook removed."})
+    )
+    result = CliRunner().invoke(main, ["webhook", "unset", "-a", "api"])
+    assert result.exit_code == 0, result.output
+    assert route.called
+
+
+@respx.mock
 def test_config_unset_removes_var(logged_in):
     _mock_dashboard()
     respx.get(f"{API}/resources/res-1/config-vars/").mock(
