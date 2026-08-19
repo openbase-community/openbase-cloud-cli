@@ -59,6 +59,7 @@ openbase logs -a my-app         # recent logs (last 15 min by default)
 openbase logs -a my-app --tail  # stream new lines (Ctrl-C to stop)
 openbase run -a my-app python manage.py migrate  # one-off command
 openbase config -a my-app       # config vars (secret values hidden)
+openbase config set -a my-app K=V # set a plaintext var (redeploys)
 openbase releases -a my-app     # recent deploy runs
 openbase open -a my-app         # open the app's URL in your browser
 ```
@@ -81,8 +82,9 @@ openbase run -a my-app python manage.py check
 openbase ps -a my-app           # confirm the stack is healthy
 ```
 
-Config vars and secrets are managed in the dashboard; `openbase config` shows
-the non-secret values (secrets display as a placeholder).
+Set plaintext config vars from the CLI with `openbase config set KEY=VALUE`
+(and `config unset KEY`); they read back with `openbase config`. Secret values
+are managed in the dashboard and display as a placeholder.
 
 ## Account-Wide Views
 

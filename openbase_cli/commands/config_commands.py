@@ -1,4 +1,4 @@
-"""``openbase config`` — read an app's config vars."""
+"""``openbase config`` — view, set, and unset an app's config vars."""
 
 from __future__ import annotations
 
@@ -7,21 +7,26 @@ import json as jsonlib
 import click
 from rich.table import Table
 
-from openbase_cli.apps import resolve_app
+from openbase_cli.apps import App, resolve_app
 from openbase_cli.context import app_option, err, handle_errors, make_client, out
 
 _SECRET_PLACEHOLDER = "(secret — set in dashboard)"
 
 
-@click.command()
+@click.group(invoke_without_command=True)
 @app_option
 @click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+@click.pass_context
 @handle_errors
-def config(app_name: str | None, as_json: bool) -> None:
-    """List config vars for an app.
+def config(ctx: click.Context, app_name: str | None, as_json: bool) -> None:
+    """View or change an app's config vars.
 
-    Secret values are never returned by the API; they show as a placeholder.
+    With no subcommand, lists the vars. Values you set with ``config set`` are
+    plaintext and read back here; secret values (managed in the dashboard) show
+    as a placeholder.
     """
+    if ctx.invoked_subcommand is not None:
+        return
     client = make_client()
     app = resolve_app(client, app_name or "")
     variables = client.resource_config_vars(app.resource_id)
@@ -43,3 +48,64 @@ def config(app_name: str | None, as_json: bool) -> None:
         value = _SECRET_PLACEHOLDER if v.get("is_secret") else (v.get("value") or "")
         table.add_row(str(v.get("key", "")), value)
     out.print(table)
+
+
+def _config_var_index(client, app: App) -> dict[str, str]:
+    """Map existing config-var key -> its id, for upsert/unset."""
+    return {
+        str(v.get("key")): str(v.get("id"))
+        for v in client.resource_config_vars(app.resource_id)
+        if v.get("key") and v.get("id")
+    }
+
+
+@config.command("set")
+@app_option
+@click.argument("pairs", nargs=-1, required=True, metavar="KEY=VALUE...")
+@handle_errors
+def config_set(app_name: str | None, pairs: tuple[str, ...]) -> None:
+    """Set one or more plaintext config vars (KEY=VALUE), then redeploy.
+
+    Overwrites a key that already exists. Secret values are not settable from
+    the CLI — use the dashboard.
+    """
+    parsed: list[tuple[str, str]] = []
+    for pair in pairs:
+        key, sep, value = pair.partition("=")
+        key = key.strip()
+        if not sep or not key:
+            raise click.UsageError(f"Invalid KEY=VALUE pair: {pair!r}")
+        parsed.append((key, value))
+
+    client = make_client()
+    app = resolve_app(client, app_name or "")
+    existing = _config_var_index(client, app)
+    for key, value in parsed:
+        # No update endpoint exists; overwrite an existing key by removing the
+        # old var first, then creating the new one.
+        if key in existing:
+            client.delete_config_var(existing[key])
+        client.set_config_var(app.resource_id, key=key, value=value)
+        err.print(f"[dim]Set {key} on {app.name}[/dim]")
+    err.print(f"Set {len(parsed)} config var(s) on {app.name}. A new release is deploying.")
+
+
+@config.command("unset")
+@app_option
+@click.argument("keys", nargs=-1, required=True, metavar="KEY...")
+@handle_errors
+def config_unset(app_name: str | None, keys: tuple[str, ...]) -> None:
+    """Remove one or more config vars, then redeploy."""
+    client = make_client()
+    app = resolve_app(client, app_name or "")
+    existing = _config_var_index(client, app)
+    removed = 0
+    for key in keys:
+        if key not in existing:
+            err.print(f"[yellow]{key} is not set on {app.name}; skipping.[/yellow]")
+            continue
+        client.delete_config_var(existing[key])
+        err.print(f"[dim]Unset {key} on {app.name}[/dim]")
+        removed += 1
+    if removed:
+        err.print(f"Unset {removed} config var(s) on {app.name}. A new release is deploying.")

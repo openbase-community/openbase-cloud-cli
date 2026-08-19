@@ -115,6 +115,18 @@ class Client:
         data = self._request("GET", f"{_BASE_PATH}/resources/{resource_id}/config-vars/")
         return data if isinstance(data, list) else data.get("results", [])
 
+    def set_config_var(self, resource_id: str, *, key: str, value: str) -> dict[str, Any]:
+        """Create a plaintext (non-secret) config var. Secrets are managed in
+        the dashboard; the CLI only handles readable Heroku-style vars."""
+        return self._request(
+            "POST",
+            f"{_BASE_PATH}/resources/{resource_id}/config-vars/",
+            json={"key": key, "value": value, "is_secret": False},
+        )
+
+    def delete_config_var(self, config_var_id: str) -> None:
+        self._request("DELETE", f"{_BASE_PATH}/config-vars/{config_var_id}/")
+
     # -- account / workspace / usage --------------------------------------
 
     def me(self) -> dict[str, Any]:

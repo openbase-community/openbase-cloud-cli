@@ -202,6 +202,65 @@ def test_config_hides_secrets(logged_in):
 
 
 @respx.mock
+def test_config_set_creates_new_var(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(return_value=httpx.Response(200, json=[]))
+    route = respx.post(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json={"key": "FOO", "value": "bar"})
+    )
+
+    result = CliRunner().invoke(main, ["config", "set", "-a", "api", "FOO=bar"])
+
+    assert result.exit_code == 0, result.output
+    body = json.loads(route.calls.last.request.content)
+    assert body == {"key": "FOO", "value": "bar", "is_secret": False}
+
+
+@respx.mock
+def test_config_set_overwrites_existing_var(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200, json=[{"key": "FOO", "id": "cv-1", "is_secret": False, "value": "old"}]
+        )
+    )
+    delete = respx.delete(f"{API}/config-vars/cv-1/").mock(return_value=httpx.Response(204))
+    post = respx.post(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json={"key": "FOO", "value": "new"})
+    )
+
+    result = CliRunner().invoke(main, ["config", "set", "-a", "api", "FOO=new"])
+
+    assert result.exit_code == 0, result.output
+    assert delete.called  # old var removed before recreate
+    assert json.loads(post.calls.last.request.content)["value"] == "new"
+
+
+@respx.mock
+def test_config_set_rejects_bad_pair(logged_in):
+    _mock_dashboard()
+    result = CliRunner().invoke(main, ["config", "set", "-a", "api", "NOEQUALS"])
+    assert result.exit_code != 0
+    assert "Invalid KEY=VALUE" in result.output
+
+
+@respx.mock
+def test_config_unset_removes_var(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200, json=[{"key": "FOO", "id": "cv-1", "is_secret": False, "value": "bar"}]
+        )
+    )
+    delete = respx.delete(f"{API}/config-vars/cv-1/").mock(return_value=httpx.Response(204))
+
+    result = CliRunner().invoke(main, ["config", "unset", "-a", "api", "FOO"])
+
+    assert result.exit_code == 0, result.output
+    assert delete.called
+
+
+@respx.mock
 def test_releases(logged_in):
     _mock_dashboard()
     respx.get(f"{API}/resources/res-1/runs/").mock(
