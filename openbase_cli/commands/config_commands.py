@@ -10,7 +10,7 @@ from rich.table import Table
 from openbase_cli.apps import App, resolve_app
 from openbase_cli.context import app_option, err, handle_errors, make_client, out
 
-_SECRET_PLACEHOLDER = "(secret — set in dashboard)"
+_SECRET_PLACEHOLDER = "(secret — value hidden)"
 
 
 @click.group(invoke_without_command=True)
@@ -21,9 +21,9 @@ _SECRET_PLACEHOLDER = "(secret — set in dashboard)"
 def config(ctx: click.Context, app_name: str | None, as_json: bool) -> None:
     """View or change an app's config vars.
 
-    With no subcommand, lists the vars. Values you set with ``config set`` are
-    plaintext and read back here; secret values (managed in the dashboard) show
-    as a placeholder.
+    With no subcommand, lists the vars. Values set with ``config set`` are
+    plaintext and read back here; values set with ``config set --secret`` (or
+    as secrets in the dashboard) are write-only and show as a placeholder.
     """
     if ctx.invoked_subcommand is not None:
         return
@@ -61,13 +61,20 @@ def _config_var_index(client, app: App) -> dict[str, str]:
 
 @config.command("set")
 @app_option
+@click.option(
+    "--secret",
+    "is_secret",
+    is_flag=True,
+    help="Store the value(s) as write-only secrets instead of plaintext vars.",
+)
 @click.argument("pairs", nargs=-1, required=True, metavar="KEY=VALUE...")
 @handle_errors
-def config_set(app_name: str | None, pairs: tuple[str, ...]) -> None:
-    """Set one or more plaintext config vars (KEY=VALUE), then redeploy.
+def config_set(app_name: str | None, is_secret: bool, pairs: tuple[str, ...]) -> None:
+    """Set one or more config vars (KEY=VALUE), then redeploy.
 
-    Overwrites a key that already exists. Secret values are not settable from
-    the CLI — use the dashboard.
+    Overwrites a key that already exists. Values are plaintext and readable
+    back with ``openbase config`` unless ``--secret`` is passed, in which case
+    they are stored write-only (shown only as a placeholder afterwards).
     """
     parsed: list[tuple[str, str]] = []
     for pair in pairs:
@@ -85,9 +92,11 @@ def config_set(app_name: str | None, pairs: tuple[str, ...]) -> None:
         # old var first, then creating the new one.
         if key in existing:
             client.delete_config_var(existing[key])
-        client.set_config_var(app.resource_id, key=key, value=value)
-        err.print(f"[dim]Set {key} on {app.name}[/dim]")
-    err.print(f"Set {len(parsed)} config var(s) on {app.name}. A new release is deploying.")
+        client.set_config_var(app.resource_id, key=key, value=value, is_secret=is_secret)
+        kind = "secret" if is_secret else "config var"
+        err.print(f"[dim]Set {kind} {key} on {app.name}[/dim]")
+    noun = "secret(s)" if is_secret else "config var(s)"
+    err.print(f"Set {len(parsed)} {noun} on {app.name}. A new release is deploying.")
 
 
 @config.command("unset")

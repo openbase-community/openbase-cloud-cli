@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import click
 
+from openbase_cli.commands.access_commands import access
 from openbase_cli.commands.account_commands import account
 from openbase_cli.commands.apps_commands import apps, open_app
 from openbase_cli.commands.auth_commands import coder, login, logout, whoami
@@ -64,6 +65,7 @@ main.add_command(logs)
 main.add_command(ps)
 main.add_command(status)
 main.add_command(config_cmd)
+main.add_command(access)
 main.add_command(health_check)
 main.add_command(releases)
 main.add_command(run_command)

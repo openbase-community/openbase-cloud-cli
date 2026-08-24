@@ -83,8 +83,10 @@ openbase ps -a my-app           # confirm the stack is healthy
 ```
 
 Set plaintext config vars from the CLI with `openbase config set KEY=VALUE`
-(and `config unset KEY`); they read back with `openbase config`. Secret values
-are managed in the dashboard and display as a placeholder.
+(and `config unset KEY`); they read back with `openbase config`. Add
+`--secret` to store values write-only — they display as a placeholder
+afterwards. Share pool access with `openbase access add EMAIL`; collaborators
+can deploy and manage config vars and secrets on the pool's apps.
 
 ## Account-Wide Views
 

@@ -37,7 +37,8 @@ terminal path to the same account and apps.
 | [`logs`](logs.md) | Display and tail recent app logs |
 | [`run`](run.md) | Run a one-off command in an app container |
 | [`ps`](ps.md) | Show an app's current stack status (alias: `status`) |
-| [`config`](config.md) | View, set, and unset an app's config vars (secrets in dashboard) |
+| [`config`](config.md) | View, set, and unset an app's config vars and secrets |
+| [`access`](access.md) | View and manage the pool's collaborators |
 | [`health-check`](health-check.md) | View or set the web health-check path |
 | [`releases`](releases.md) | List recent deploy runs (releases) for an app |
 | [`webhook`](webhook.md) | Manage the pool's release-notification webhook |

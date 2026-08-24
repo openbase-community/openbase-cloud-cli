@@ -21,6 +21,7 @@ nav = [
     { "run" = "commands/run.md" },
     { "ps" = "commands/ps.md" },
     { "config" = "commands/config.md" },
+    { "access" = "commands/access.md" },
     { "health-check" = "commands/health-check.md" },
     { "releases" = "commands/releases.md" },
     { "webhook" = "commands/webhook.md" },

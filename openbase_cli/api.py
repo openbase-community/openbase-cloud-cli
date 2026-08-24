@@ -129,17 +129,36 @@ class Client:
         data = self._request("GET", f"{_BASE_PATH}/resources/{resource_id}/config-vars/")
         return data if isinstance(data, list) else data.get("results", [])
 
-    def set_config_var(self, resource_id: str, *, key: str, value: str) -> dict[str, Any]:
-        """Create a plaintext (non-secret) config var. Secrets are managed in
-        the dashboard; the CLI only handles readable Heroku-style vars."""
+    def set_config_var(
+        self, resource_id: str, *, key: str, value: str, is_secret: bool = False
+    ) -> dict[str, Any]:
+        """Create a config var. Secret values are write-only: the API stores
+        them in SSM and never returns the value in listings."""
         return self._request(
             "POST",
             f"{_BASE_PATH}/resources/{resource_id}/config-vars/",
-            json={"key": key, "value": value, "is_secret": False},
+            json={"key": key, "value": value, "is_secret": is_secret},
         )
 
     def delete_config_var(self, config_var_id: str) -> None:
         self._request("DELETE", f"{_BASE_PATH}/config-vars/{config_var_id}/")
+
+    def stack_access(self, stack_id: str) -> dict[str, Any]:
+        """The pool's access object: accepted collaborators + pending invitations."""
+        return self._request("GET", f"{_BASE_PATH}/stacks/{stack_id}/collaborators/") or {}
+
+    def create_stack_invitation(self, stack_id: str, *, email: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"{_BASE_PATH}/stacks/{stack_id}/collaborator-invitations/",
+            json={"email": email},
+        )
+
+    def delete_stack_invitation(self, invitation_id: str) -> None:
+        self._request("DELETE", f"{_BASE_PATH}/collaborator-invitations/{invitation_id}/")
+
+    def delete_stack_collaborator(self, collaborator_id: str) -> None:
+        self._request("DELETE", f"{_BASE_PATH}/collaborators/{collaborator_id}/")
 
     # -- account / workspace / usage --------------------------------------
 
