@@ -41,6 +41,7 @@ def releases(app_name: str | None, limit: int, as_json: bool) -> None:
     table.add_column("OPERATION", style="bold")
     table.add_column("STATUS")
     table.add_column("REF")
+    table.add_column("AGENT")
     table.add_column("SUMMARY")
     for run in runs:
         table.add_row(
@@ -48,6 +49,7 @@ def releases(app_name: str | None, limit: int, as_json: bool) -> None:
             str(run.get("operation", "") or "—"),
             str(run.get("status", "") or "—"),
             _ref(run),
+            str(run.get("agent_id", "") or "—"),
             str(run.get("summary", "") or ""),
         )
     out.print(table)

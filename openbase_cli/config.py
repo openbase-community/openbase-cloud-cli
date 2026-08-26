@@ -32,3 +32,14 @@ def default_app() -> str | None:
     """App name from the environment, mirroring Heroku's ``HEROKU_APP``."""
     value = os.environ.get("OPENBASE_APP", "").strip()
     return value or None
+
+
+def agent_id() -> str | None:
+    """Agent attribution for mutations, from ``OPENBASE_AGENT_ID``.
+
+    An agent sets this to its agent/thread UUID so every PaaS mutation it makes
+    is attributed to it; when unset the CLI sends nothing and the server records
+    the mutation as ``human``.
+    """
+    value = os.environ.get("OPENBASE_AGENT_ID", "").strip()
+    return value or None

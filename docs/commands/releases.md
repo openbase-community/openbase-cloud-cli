@@ -23,7 +23,12 @@ A table, newest first:
 | OPERATION | Deploy, rollback, sync, teardown, etc. |
 | STATUS | Run status |
 | REF | Git ref and short commit (e.g. `main@a1b2c3d`) |
+| AGENT | Who triggered the run — an agent/thread UUID, or `human` |
 | SUMMARY | Short run summary, when present |
+
+Attribution comes from the `OPENBASE_AGENT_ID` an agent sets when it drives the
+CLI (see [Configuration](../configuration.md)); mutations made without it are
+recorded as `human`.
 
 ## Options
 
