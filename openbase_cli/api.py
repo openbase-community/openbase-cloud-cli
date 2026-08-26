@@ -42,6 +42,12 @@ class Client:
     ) -> Any:
         token = self._tokens.get_access_token()
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        # Attribute every mutation to the caller. Agents export OPENBASE_AGENT_ID
+        # (their agent/thread UUID); humans leave it unset and the server records
+        # the mutation as "human".
+        agent_id = config.agent_id()
+        if agent_id:
+            headers["X-Openbase-Agent-Id"] = agent_id
         url = f"{self._host}{path}"
         try:
             resp = httpx.request(method, url, headers=headers, timeout=timeout, **kwargs)
