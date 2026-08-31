@@ -27,7 +27,7 @@ A table, newest first:
 | SUMMARY | Short run summary, when present |
 
 Attribution comes from the caller's agent/thread ID. Codex is detected
-automatically, and other callers can set `OPENBASE_AGENT_ID` explicitly (see
+automatically, and other callers can set `AGENT_SESSION_ID` explicitly (see
 [Configuration](../configuration.md)); mutations made without an available ID
 are recorded as `human`.
 

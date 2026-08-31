@@ -10,7 +10,7 @@ of global flags. Credentials are stored on disk by the shared sign-in flow.
 | `OPENBASE_APP` | Default app for `-a/--app`, so you can omit the flag | — |
 | `OPENBASE_API_URL` | Override the Openbase Cloud base URL | `https://app.openbase.cloud` |
 | `OPENBASE_HOST` | Alias for `OPENBASE_API_URL` | — |
-| `OPENBASE_AGENT_ID` | Override mutation attribution with an agent/thread UUID | `CODEX_THREAD_ID` when available |
+| `AGENT_SESSION_ID` | Vendor-neutral agent/session UUID used for mutation attribution | `CODEX_THREAD_ID` when available |
 
 Set a default app for a shell session:
 
@@ -27,12 +27,12 @@ current `CODEX_THREAD_ID`. Other callers can provide an agent/thread UUID
 explicitly:
 
 ```bash
-export OPENBASE_AGENT_ID=cac5ccd4-2499-4784-a2a6-05e3b2caa98b
+export AGENT_SESSION_ID=cac5ccd4-2499-4784-a2a6-05e3b2caa98b
 openbase config set -a my-app FEATURE_FLAG=on
 ```
 
 The CLI sends the resolved ID as the `X-Openbase-Agent-Id` header.
-`OPENBASE_AGENT_ID` takes precedence over automatic runtime detection. When no
+`AGENT_SESSION_ID` takes precedence over automatic runtime detection. When no
 ID is available, the CLI sends nothing and Openbase Cloud records the mutation
 as `human`. Attribution shows up in the AGENT column of
 [`openbase releases`](commands/releases.md) and in release webhook
