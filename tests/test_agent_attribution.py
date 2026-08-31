@@ -1,7 +1,7 @@
 """The CLI attributes mutations to the calling agent.
 
 The client sends ``X-Openbase-Agent-Id`` on every request. An explicit
-``OPENBASE_AGENT_ID`` wins; otherwise Codex's native ``CODEX_THREAD_ID`` is
+``AGENT_SESSION_ID`` wins; otherwise Codex's native ``CODEX_THREAD_ID`` is
 used automatically. When neither is set the server records "human". The
 ``releases`` table surfaces the server-recorded attribution.
 """
@@ -29,7 +29,7 @@ def _mock_config_set():
 
 @respx.mock
 def test_mutation_sends_agent_header_when_env_set(logged_in, monkeypatch):
-    monkeypatch.setenv("OPENBASE_AGENT_ID", _AGENT_UUID)
+    monkeypatch.setenv("AGENT_SESSION_ID", _AGENT_UUID)
     monkeypatch.setenv("CODEX_THREAD_ID", "11111111-1111-1111-1111-111111111111")
     _mock_dashboard()
     route = _mock_config_set()
@@ -42,7 +42,7 @@ def test_mutation_sends_agent_header_when_env_set(logged_in, monkeypatch):
 
 @respx.mock
 def test_mutation_uses_codex_thread_id_automatically(logged_in, monkeypatch):
-    monkeypatch.delenv("OPENBASE_AGENT_ID", raising=False)
+    monkeypatch.delenv("AGENT_SESSION_ID", raising=False)
     monkeypatch.setenv("CODEX_THREAD_ID", _AGENT_UUID)
     _mock_dashboard()
     route = _mock_config_set()
@@ -55,7 +55,7 @@ def test_mutation_uses_codex_thread_id_automatically(logged_in, monkeypatch):
 
 @respx.mock
 def test_mutation_omits_agent_header_when_env_unset(logged_in, monkeypatch):
-    monkeypatch.delenv("OPENBASE_AGENT_ID", raising=False)
+    monkeypatch.delenv("AGENT_SESSION_ID", raising=False)
     monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     _mock_dashboard()
     route = _mock_config_set()
