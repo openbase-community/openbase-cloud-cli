@@ -26,9 +26,10 @@ A table, newest first:
 | AGENT | Who triggered the run — an agent/thread UUID, or `human` |
 | SUMMARY | Short run summary, when present |
 
-Attribution comes from the `OPENBASE_AGENT_ID` an agent sets when it drives the
-CLI (see [Configuration](../configuration.md)); mutations made without it are
-recorded as `human`.
+Attribution comes from the caller's agent/thread ID. Codex is detected
+automatically, and other callers can set `OPENBASE_AGENT_ID` explicitly (see
+[Configuration](../configuration.md)); mutations made without an available ID
+are recorded as `human`.
 
 ## Options
 

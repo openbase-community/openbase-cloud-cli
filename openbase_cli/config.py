@@ -35,11 +35,15 @@ def default_app() -> str | None:
 
 
 def agent_id() -> str | None:
-    """Agent attribution for mutations, from ``OPENBASE_AGENT_ID``.
+    """Agent attribution for mutations, from the caller's environment.
 
-    An agent sets this to its agent/thread UUID so every PaaS mutation it makes
-    is attributed to it; when unset the CLI sends nothing and the server records
-    the mutation as ``human``.
+    ``OPENBASE_AGENT_ID`` is the explicit override. Codex exposes the current
+    thread UUID as ``CODEX_THREAD_ID``, so Codex-driven mutations are attributed
+    automatically. When neither is set the CLI sends nothing and the server
+    records the mutation as ``human``.
     """
-    value = os.environ.get("OPENBASE_AGENT_ID", "").strip()
-    return value or None
+    for name in ("OPENBASE_AGENT_ID", "CODEX_THREAD_ID"):
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return None
