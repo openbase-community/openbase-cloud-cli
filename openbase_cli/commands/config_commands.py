@@ -67,16 +67,47 @@ def _config_var_index(client, app: App) -> dict[str, str]:
     is_flag=True,
     help="Store the value(s) as write-only secrets instead of plaintext vars.",
 )
-@click.argument("pairs", nargs=-1, required=True, metavar="KEY=VALUE...")
+@click.option(
+    "--secret-stdin",
+    "secret_stdin_key",
+    metavar="KEY",
+    help="Read one write-only secret from standard input instead of process arguments.",
+)
+@click.argument("pairs", nargs=-1, metavar="KEY=VALUE...")
 @handle_errors
-def config_set(app_name: str | None, is_secret: bool, pairs: tuple[str, ...]) -> None:
+def config_set(
+    app_name: str | None,
+    is_secret: bool,
+    secret_stdin_key: str | None,
+    pairs: tuple[str, ...],
+) -> None:
     """Set one or more config vars (KEY=VALUE), then redeploy.
 
     Overwrites a key that already exists. Values are plaintext and readable
     back with ``openbase config`` unless ``--secret`` is passed, in which case
-    they are stored write-only (shown only as a placeholder afterwards).
+    they are stored write-only (shown only as a placeholder afterwards). Use
+    ``--secret-stdin KEY`` to keep one secret value out of process arguments.
     """
+    if secret_stdin_key and (is_secret or pairs):
+        raise click.UsageError("--secret-stdin cannot be combined with --secret or KEY=VALUE")
+    if not secret_stdin_key and not pairs:
+        raise click.UsageError("Provide KEY=VALUE or --secret-stdin KEY")
+
     parsed: list[tuple[str, str]] = []
+    if secret_stdin_key:
+        key = secret_stdin_key.strip()
+        if not key:
+            raise click.UsageError("--secret-stdin requires a non-empty key")
+        value = click.get_text_stream("stdin").read()
+        if value.endswith("\n"):
+            value = value[:-1]
+            if value.endswith("\r"):
+                value = value[:-1]
+        if not value:
+            raise click.UsageError("No secret value was received on standard input")
+        parsed.append((key, value))
+        is_secret = True
+
     for pair in pairs:
         key, sep, value = pair.partition("=")
         key = key.strip()

@@ -245,6 +245,45 @@ def test_config_set_rejects_bad_pair(logged_in):
 
 
 @respx.mock
+def test_config_set_reads_secret_from_stdin_without_echoing_it(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    route = respx.post(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json={"key": "TOKEN", "value": None})
+    )
+
+    result = CliRunner().invoke(
+        main,
+        ["config", "set", "-a", "api", "--secret-stdin", "TOKEN"],
+        input="stdin-only-secret\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "stdin-only-secret" not in result.output
+    assert json.loads(route.calls.last.request.content) == {
+        "key": "TOKEN",
+        "value": "stdin-only-secret",
+        "is_secret": True,
+    }
+
+
+@respx.mock
+def test_config_set_rejects_ambiguous_secret_stdin(logged_in):
+    _mock_dashboard()
+
+    result = CliRunner().invoke(
+        main,
+        ["config", "set", "-a", "api", "--secret-stdin", "TOKEN", "OTHER=value"],
+        input="stdin-only-secret\n",
+    )
+
+    assert result.exit_code != 0
+    assert "cannot be combined" in result.output
+
+
+@respx.mock
 def test_webhook_set(logged_in):
     _mock_dashboard()
     route = respx.put(f"{API}/stacks/stack-1/webhook/").mock(
