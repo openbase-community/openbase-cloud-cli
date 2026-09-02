@@ -28,11 +28,16 @@ err = Console(stderr=True)
 _TERMINAL_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f\x80-\x9f]")
 
 
+def sanitize_remote_text(value: object) -> str:
+    """Strip terminal control characters from untrusted server text."""
+    return _TERMINAL_CONTROL_CHARS.sub("", str(value))
+
+
 def print_remote_line(line: str) -> None:
     """Print one line of remote app output (logs, run results) with terminal
     control characters stripped so remote content cannot inject escape
     sequences into the user's terminal."""
-    out.print(_TERMINAL_CONTROL_CHARS.sub("", str(line)), markup=False, highlight=False)
+    out.print(sanitize_remote_text(line), markup=False, highlight=False)
 
 
 F = TypeVar("F", bound=Callable[..., Any])

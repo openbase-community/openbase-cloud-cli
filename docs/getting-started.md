@@ -66,20 +66,14 @@ openbase open -a my-app         # open the app's URL in your browser
 
 ## Deploy an App
 
-Openbase Cloud deploys are **push-to-deploy**: you connect a GitHub repository
-to an app in the [dashboard](https://app.openbase.cloud), and pushing to the
-connected branch triggers a deploy run. The `openbase` CLI is how you watch and
-verify those runs from the terminal — it reads deploy state, it does not push
-infrastructure itself.
+Openbase Cloud deploys are **push-to-deploy**: you connect a GitHub repository to an app in the [dashboard](https://app.openbase.cloud), and pushing to the connected branch triggers a deploy run. The `openbase` CLI reads and verifies deploy state; it does not push infrastructure itself. See the authoritative [`releases` command reference](commands/releases.md) for monitoring behavior and options.
 
 A typical loop after connecting a repo:
 
 ```bash
 git push origin main            # triggers a deploy run on Openbase Cloud
-openbase releases -a my-app     # watch the new run appear and progress
-openbase logs -a my-app --tail  # follow app logs during/after rollout
+openbase logs -a my-app --tail  # inspect application runtime logs
 openbase run -a my-app python manage.py check
-openbase ps -a my-app           # confirm the stack is healthy
 ```
 
 Set plaintext config vars from the CLI with `openbase config set KEY=VALUE`

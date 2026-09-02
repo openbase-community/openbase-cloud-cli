@@ -48,6 +48,8 @@ openbase releases -a my-app         # recent deploys
 openbase open -a my-app             # open the app in your browser
 ```
 
+See the [releases command documentation](docs/commands/releases.md) for exact-commit waiting and live rollout verification.
+
 ## Account, projects & workspaces
 
 ```bash
