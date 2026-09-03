@@ -1,29 +1,40 @@
-"""Authentication: a small token store that piggybacks on Openbase Coder.
+"""Authentication: a read-only token store that delegates refresh to Openbase Coder.
 
 Credentials live in the shared ``~/.openbase/auth.json`` written by the
-Openbase Coder CLI. This module reads that file, refreshes the short-lived JWT
-access token against Openbase Cloud's allauth endpoint when needed, and (for
-``openbase login``) runs the same browser OAuth+PKCE flow the coder CLI uses so
-either tool can establish the shared session.
+Openbase Coder CLI. This module only ever READS that file: when the cached
+access token is still valid it is used directly, and when it is expired (or
+the on-disk ``refresh_rejected_at`` marker says the login is dead) refresh is
+delegated to ``openbase-coder auth access-token --json`` as a subprocess.
+
+The coder CLI owns all writes to auth.json and serializes refresh across
+processes with a file lock. Refreshing in-process here would race it: allauth
+refresh tokens are single-use, so two processes refreshing the same token
+milliseconds apart get one winner and one 401 — and an unlocked loser can
+clobber the winner's rotated token on disk, logging the user out.
 
 Only the subset needed by a read-mostly PaaS client is implemented here; the
-full lifecycle (machine tokens, device registration) stays in the coder CLI.
+full lifecycle (login, refresh, machine tokens, device registration) stays in
+the coder CLI.
 """
 
 from __future__ import annotations
 
 import base64
 import json
-import os
+import subprocess
 import time
 from typing import Any
 
-import httpx
-
 from openbase_cli import config
+from openbase_cli.coder import CoderNotInstalledError, coder_path
 
-# Refresh a little before expiry so in-flight requests never race the clock.
+# Treat the cached access token as expired a little early so in-flight
+# requests never race the clock.
 _REFRESH_MARGIN_SECONDS = 60
+
+# `openbase-coder auth access-token` exits with this code when only a new
+# login can produce a token (see its docstring in the coder CLI).
+_CODER_LOGIN_REQUIRED_EXIT_CODE = 4
 
 
 class AuthError(Exception):
@@ -57,13 +68,14 @@ def decode_jwt_claims_unverified(token: str) -> dict[str, Any]:
 
 
 class TokenManager:
-    """Load/refresh the shared Openbase Cloud JWT credentials."""
+    """Load the shared Openbase Cloud JWT credentials; delegate refresh."""
 
     def __init__(self, host: str | None = None):
         self._host = (host or config.host()).rstrip("/")
         self._access_token = ""
         self._refresh_token = ""
         self._access_expires_at = 0.0
+        self._refresh_rejected_at = 0.0
 
     # -- persistence -------------------------------------------------------
 
@@ -72,6 +84,7 @@ class TokenManager:
         if not path.is_file():
             self._access_token = self._refresh_token = ""
             self._access_expires_at = 0.0
+            self._refresh_rejected_at = 0.0
             return
         try:
             data = json.loads(path.read_text())
@@ -80,36 +93,14 @@ class TokenManager:
         self._access_token = data.get("access_token", "")
         self._refresh_token = data.get("refresh_token", "")
         self._access_expires_at = data.get("access_expires_at", 0) or 0
-
-    def save(self) -> None:
-        path = config.AUTH_JSON_PATH
-        path.parent.mkdir(parents=True, exist_ok=True)
-        payload = json.dumps(
-            {
-                "access_token": self._access_token,
-                "refresh_token": self._refresh_token,
-                "access_expires_at": self._access_expires_at,
-                "refresh_rejected_at": 0,
-            },
-            indent=2,
-        )
-        tmp = path.with_suffix(f".json.tmp{os.getpid()}")
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as fh:
-            fh.write(payload)
-        os.replace(tmp, path)
+        self._refresh_rejected_at = data.get("refresh_rejected_at", 0) or 0
 
     def clear(self) -> None:
         self._access_token = self._refresh_token = ""
         self._access_expires_at = 0.0
+        self._refresh_rejected_at = 0.0
         if config.AUTH_JSON_PATH.is_file():
             config.AUTH_JSON_PATH.unlink()
-
-    def store_tokens(self, *, access_token: str, refresh_token: str, expires_in: int = 300) -> None:
-        self._access_token = access_token
-        self._refresh_token = refresh_token
-        self._access_expires_at = time.time() + expires_in
-        self.save()
 
     # -- token state -------------------------------------------------------
 
@@ -129,41 +120,65 @@ class TokenManager:
         )
 
     def get_access_token(self) -> str:
-        """Return a valid access token, refreshing from the backend if needed."""
+        """Return a valid access token, delegating refresh to openbase-coder."""
         self.load()
+        if self._refresh_rejected_at:
+            # The coder CLI recorded a definitive refresh rejection on disk;
+            # no refresh attempt can recover, only a new login.
+            raise LoginRequiredError("Login expired. Run 'openbase login' again.")
         if self._access_is_valid():
             return self._access_token
         if not self._refresh_token:
             raise LoginRequiredError("Not logged in. Run 'openbase login' first.")
-        self._refresh()
+        self._delegate_refresh_to_coder()
         return self._access_token
 
-    def _refresh(self) -> None:
-        url = f"{self._host}/_allauth/app/v1/tokens/refresh"
+    def _delegate_refresh_to_coder(self) -> None:
+        """Obtain a fresh access token via ``openbase-coder auth access-token``.
+
+        The coder CLI performs the actual refresh under its cross-process
+        file lock and writes the rotated tokens to auth.json itself; we only
+        capture the token it prints. This module must never write auth.json.
+        """
         try:
-            resp = httpx.post(url, json={"refresh_token": self._refresh_token}, timeout=15)
-        except httpx.HTTPError as exc:
+            executable = coder_path()
+        except CoderNotInstalledError as exc:
+            raise LoginRequiredError(
+                "The 'openbase-coder' CLI is required to refresh the shared "
+                "Openbase login but was not found on your PATH.\n"
+                "Install it (e.g. `uv tool install openbase-coder`) and run "
+                "'openbase login'."
+            ) from exc
+
+        try:
+            completed = subprocess.run(
+                [executable, "auth", "access-token", "--json"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
             raise AuthTransientError(f"Token refresh failed: {exc}") from exc
 
-        if resp.status_code in (400, 401, 403):
-            raise LoginRequiredError("Login expired. Run 'openbase login' again.")
-        if resp.status_code >= 500:
-            raise AuthTransientError(f"Token refresh failed (status {resp.status_code}).")
-        resp.raise_for_status()
+        if completed.returncode == _CODER_LOGIN_REQUIRED_EXIT_CODE:
+            raise LoginRequiredError("Not logged in. Run 'openbase login' first.")
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            raise AuthTransientError(
+                f"Token refresh via openbase-coder failed"
+                f" (exit {completed.returncode})" + (f": {detail}" if detail else ".")
+            )
 
-        data = resp.json() if resp.content else {}
-        meta = data.get("meta", {}) if isinstance(data, dict) else {}
-        payload = data.get("data", {}) if isinstance(data, dict) else {}
-        self._access_token = (
-            meta.get("access_token") or payload.get("access_token") or data.get("access_token", "")
-        )
-        new_refresh = (
-            meta.get("refresh_token") or payload.get("refresh_token") or data.get("refresh_token")
-        )
-        if new_refresh:
-            self._refresh_token = new_refresh
-        expires_in = (
-            meta.get("access_token_expires_in") or payload.get("access_token_expires_in") or 300
-        )
-        self._access_expires_at = time.time() + expires_in
-        self.save()
+        try:
+            payload = json.loads(completed.stdout)
+            access_token = payload["access_token"]
+        except (json.JSONDecodeError, TypeError, KeyError) as exc:
+            raise AuthTransientError(
+                "Token refresh via openbase-coder returned unparseable output."
+            ) from exc
+        if not access_token:
+            raise AuthTransientError("Token refresh via openbase-coder returned an empty token.")
+        self._access_token = access_token
+        self._access_expires_at = payload.get("access_expires_at", 0) or 0
+        self._refresh_rejected_at = 0.0
