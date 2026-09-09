@@ -10,7 +10,7 @@ of global flags. Credentials are stored on disk by the shared sign-in flow.
 | `OPENBASE_APP` | Default app for `-a/--app`, so you can omit the flag | — |
 | `OPENBASE_API_URL` | Override the Openbase Cloud base URL | `https://app.openbase.cloud` |
 | `OPENBASE_HOST` | Alias for `OPENBASE_API_URL` | — |
-| `AGENT_SESSION_ID` | Vendor-neutral agent/session UUID used for mutation attribution | `CODEX_THREAD_ID` when available |
+| `AGENT_SESSION_ID` | Vendor-neutral agent/session UUID used for mutation attribution | — |
 
 Set a default app for a shell session:
 
@@ -22,8 +22,8 @@ openbase logs --tail        # no -a needed
 ## Agent Attribution
 
 Every mutation (config changes, deploys, restarts, hostname edits, teardowns)
-is recorded against whoever made it. In Codex, the CLI automatically uses the
-current `CODEX_THREAD_ID`. Other callers can provide an agent/thread UUID
+is recorded against whoever made it. Agent runtimes export the session UUID
+as `AGENT_SESSION_ID` automatically; other callers can provide one
 explicitly:
 
 ```bash
