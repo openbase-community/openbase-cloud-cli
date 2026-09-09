@@ -37,11 +37,16 @@ def default_app() -> str | None:
 def agent_id() -> str | None:
     """Agent attribution for mutations, from the caller's environment.
 
-    ``AGENT_SESSION_ID`` is the single vendor-neutral attribution variable:
-    Claude Code sessions export it via the inject-session-id hook, and Codex
+    ``AGENT_SESSION_ID`` is the vendor-neutral attribution variable: Claude
+    Code sessions export it via the inject-session-id hook, and Codex
     app-server threads receive it through super-agents' per-thread
-    shell_environment_policy. When unset the CLI sends nothing and the server
+    shell_environment_policy. Codex's native ``CODEX_THREAD_ID`` remains a
+    backwards-compat fallback for codex shells not driven through
+    super-agents. When neither is set the CLI sends nothing and the server
     records the mutation as ``human``.
     """
-    value = os.environ.get("AGENT_SESSION_ID", "").strip()
-    return value or None
+    for name in ("AGENT_SESSION_ID", "CODEX_THREAD_ID"):
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return None

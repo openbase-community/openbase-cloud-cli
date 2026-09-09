@@ -2,7 +2,9 @@
 
 The client sends ``X-Openbase-Agent-Id`` on every request, sourced solely
 from ``AGENT_SESSION_ID`` (the vendor-neutral session variable set for both
-Claude Code and Codex agent shells). When unset the server records "human".
+Claude Code and Codex agent shells), with Codex's native ``CODEX_THREAD_ID``
+as a backwards-compat fallback. When neither is set the server records
+"human".
 The ``releases`` table surfaces the server-recorded attribution.
 """
 
@@ -30,6 +32,20 @@ def _mock_config_set():
 @respx.mock
 def test_mutation_sends_agent_header_when_env_set(logged_in, monkeypatch):
     monkeypatch.setenv("AGENT_SESSION_ID", _AGENT_UUID)
+    monkeypatch.setenv("CODEX_THREAD_ID", "11111111-1111-1111-1111-111111111111")
+    _mock_dashboard()
+    route = _mock_config_set()
+
+    result = CliRunner().invoke(main, ["config", "set", "-a", "api", "FOO=bar"])
+
+    assert result.exit_code == 0, result.output
+    assert route.calls.last.request.headers["X-Openbase-Agent-Id"] == _AGENT_UUID
+
+
+@respx.mock
+def test_mutation_falls_back_to_codex_thread_id(logged_in, monkeypatch):
+    monkeypatch.delenv("AGENT_SESSION_ID", raising=False)
+    monkeypatch.setenv("CODEX_THREAD_ID", _AGENT_UUID)
     _mock_dashboard()
     route = _mock_config_set()
 
@@ -42,6 +58,7 @@ def test_mutation_sends_agent_header_when_env_set(logged_in, monkeypatch):
 @respx.mock
 def test_mutation_omits_agent_header_when_env_unset(logged_in, monkeypatch):
     monkeypatch.delenv("AGENT_SESSION_ID", raising=False)
+    monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     _mock_dashboard()
     route = _mock_config_set()
 
