@@ -195,10 +195,104 @@ def test_config_hides_secrets(logged_in):
             ],
         )
     )
-    result = CliRunner().invoke(main, ["config", "-a", "api"])
+    result = CliRunner().invoke(main, ["config", "-a", "api", "--confirm"])
     assert result.exit_code == 0, result.output
     assert "DEBUG" in result.output and "false" in result.output
     assert "secret" in result.output.lower()
+
+
+@respx.mock
+def test_config_full_listing_requires_confirm_when_non_interactive(logged_in):
+    _mock_dashboard()
+    route = respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    result = CliRunner().invoke(main, ["config", "-a", "api"])
+    assert result.exit_code != 0
+    assert "config get" in result.output
+    assert "--confirm" in result.output
+    assert not route.called  # refused before touching the API
+
+
+@respx.mock
+def test_config_full_listing_prompts_on_tty_and_aborts_on_no(logged_in, monkeypatch):
+    _mock_dashboard()
+    route = respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    monkeypatch.setattr("openbase_cli.commands.config_commands._stdin_is_interactive", lambda: True)
+    result = CliRunner().invoke(main, ["config", "-a", "api"], input="n\n")
+    assert result.exit_code != 0
+    assert "SURE" in result.output
+    assert not route.called
+
+
+@respx.mock
+def test_config_get_prints_bare_value_for_single_key(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"key": "DEBUG", "is_secret": False, "value": "false"},
+                {"key": "SECRET_KEY", "is_secret": True, "value": None},
+            ],
+        )
+    )
+    result = CliRunner().invoke(main, ["config", "get", "-a", "api", "DEBUG"])
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == "false"
+
+
+@respx.mock
+def test_config_get_masks_secrets_and_labels_multiple_keys(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"key": "DEBUG", "is_secret": False, "value": "false"},
+                {"key": "SECRET_KEY", "is_secret": True, "value": None},
+            ],
+        )
+    )
+    result = CliRunner().invoke(main, ["config", "get", "-a", "api", "DEBUG", "SECRET_KEY"])
+    assert result.exit_code == 0, result.output
+    assert "DEBUG=false" in result.output
+    assert "SECRET_KEY=(secret" in result.output
+
+
+@respx.mock
+def test_config_get_missing_key_exits_nonzero(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200, json=[{"key": "DEBUG", "is_secret": False, "value": "false"}]
+        )
+    )
+    result = CliRunner().invoke(main, ["config", "get", "-a", "api", "NOPE"])
+    assert result.exit_code == 1
+    assert "NOPE is not set" in result.output
+
+
+@respx.mock
+def test_config_get_json_outputs_requested_keys_with_null_secrets(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"key": "DEBUG", "is_secret": False, "value": "false"},
+                {"key": "SECRET_KEY", "is_secret": True, "value": None},
+                {"key": "OTHER", "is_secret": False, "value": "x"},
+            ],
+        )
+    )
+    result = CliRunner().invoke(
+        main, ["config", "get", "-a", "api", "--json", "DEBUG", "SECRET_KEY"]
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {"DEBUG": "false", "SECRET_KEY": None}
 
 
 @respx.mock
@@ -247,9 +341,7 @@ def test_config_set_rejects_bad_pair(logged_in):
 @respx.mock
 def test_config_set_reads_secret_from_stdin_without_echoing_it(logged_in):
     _mock_dashboard()
-    respx.get(f"{API}/resources/res-1/config-vars/").mock(
-        return_value=httpx.Response(200, json=[])
-    )
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(return_value=httpx.Response(200, json=[]))
     route = respx.post(f"{API}/resources/res-1/config-vars/").mock(
         return_value=httpx.Response(200, json={"key": "TOKEN", "value": None})
     )

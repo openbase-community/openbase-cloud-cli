@@ -41,7 +41,8 @@ openbase logs -a my-app --lines 200 # more log lines
 openbase logs -a my-app --tail      # stream new lines (Ctrl-C to stop)
 openbase run -a my-app python manage.py migrate   # one-off command in the web container
 openbase ps -a my-app               # current status (alias: status)
-openbase config -a my-app           # config vars (secret values hidden)
+openbase config get -a my-app KEY   # one config var's value (preferred)
+openbase config -a my-app --confirm # ALL config vars (secret values hidden)
 openbase config set -a my-app K=V   # set a plaintext var (redeploys)
 openbase health-check -a my-app     # web health-check path (zero-downtime probes)
 openbase releases -a my-app         # recent deploys

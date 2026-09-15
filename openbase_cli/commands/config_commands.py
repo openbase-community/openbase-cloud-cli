@@ -3,30 +3,68 @@
 from __future__ import annotations
 
 import json as jsonlib
+import sys
 
 import click
 from rich.table import Table
 
 from openbase_cli.apps import App, resolve_app
-from openbase_cli.context import app_option, err, handle_errors, make_client, out
+from openbase_cli.context import (
+    app_option,
+    err,
+    handle_errors,
+    make_client,
+    out,
+    sanitize_remote_text,
+)
 
 _SECRET_PLACEHOLDER = "(secret — value hidden)"
+
+_FULL_LISTING_WARNING = (
+    "This dumps EVERY config var for the app in one output — including all "
+    "plaintext values — which is rarely what you need and is easy to leak "
+    "into logs, chat, or shell history. If you only need specific keys, use "
+    "`openbase config get KEY...` instead."
+)
+
+
+def _stdin_is_interactive() -> bool:
+    return sys.stdin.isatty()
 
 
 @click.group(invoke_without_command=True)
 @app_option
 @click.option("--json", "as_json", is_flag=True, help="Output raw JSON.")
+@click.option(
+    "--confirm",
+    "confirmed",
+    is_flag=True,
+    help="Skip the full-listing confirmation prompt (required when non-interactive).",
+)
 @click.pass_context
 @handle_errors
-def config(ctx: click.Context, app_name: str | None, as_json: bool) -> None:
+def config(ctx: click.Context, app_name: str | None, as_json: bool, confirmed: bool) -> None:
     """View or change an app's config vars.
 
-    With no subcommand, lists the vars. Values set with ``config set`` are
-    plaintext and read back here; values set with ``config set --secret`` (or
-    as secrets in the dashboard) are write-only and show as a placeholder.
+    With no subcommand, lists ALL the vars — prefer ``config get KEY`` for
+    specific values. Values set with ``config set`` are plaintext and read
+    back here; values set with ``config set --secret`` (or as secrets in the
+    dashboard) are write-only and show as a placeholder.
+
+    The full listing asks for confirmation (pass ``--confirm`` to skip, which
+    is required when running non-interactively).
     """
     if ctx.invoked_subcommand is not None:
         return
+    if not confirmed:
+        if _stdin_is_interactive():
+            err.print(f"[yellow]{_FULL_LISTING_WARNING}[/yellow]")
+            if not click.confirm("Are you SURE you want the full listing?"):
+                raise click.Abort()
+        else:
+            raise click.UsageError(
+                _FULL_LISTING_WARNING + " To list everything anyway, pass --confirm."
+            )
     client = make_client()
     app = resolve_app(client, app_name or "")
     variables = client.resource_config_vars(app.resource_id)
@@ -48,6 +86,58 @@ def config(ctx: click.Context, app_name: str | None, as_json: bool) -> None:
         value = _SECRET_PLACEHOLDER if v.get("is_secret") else (v.get("value") or "")
         table.add_row(str(v.get("key", "")), value)
     out.print(table)
+
+
+@config.command("get")
+@app_option
+@click.option("--json", "as_json", is_flag=True, help="Output a {key: value} JSON object.")
+@click.argument("keys", nargs=-1, required=True, metavar="KEY...")
+@handle_errors
+def config_get(app_name: str | None, as_json: bool, keys: tuple[str, ...]) -> None:
+    """Print the value of one or more specific config vars.
+
+    Prefer this over the full ``openbase config`` listing whenever you know
+    which keys you need: it retrieves only those values, so nothing else can
+    end up in your output, logs, or shell history.
+
+    With a single KEY, prints the bare value (pipe-friendly). With several,
+    prints ``KEY=VALUE`` lines. Secrets are write-only and show as a
+    placeholder (``null`` in ``--json``). Keys that are not set are reported
+    on stderr and the command exits non-zero.
+    """
+    client = make_client()
+    app = resolve_app(client, app_name or "")
+    variables = {
+        str(v.get("key")): v for v in client.resource_config_vars(app.resource_id) if v.get("key")
+    }
+    missing = [k for k in keys if k not in variables]
+
+    def value_of(key: str) -> str:
+        v = variables[key]
+        if v.get("is_secret"):
+            return _SECRET_PLACEHOLDER
+        return sanitize_remote_text(v.get("value") or "")
+
+    if as_json:
+        out.print_json(
+            jsonlib.dumps(
+                {
+                    k: (None if variables[k].get("is_secret") else variables[k].get("value"))
+                    for k in keys
+                    if k in variables
+                }
+            )
+        )
+    elif len(keys) == 1 and not missing:
+        out.print(value_of(keys[0]), markup=False, highlight=False)
+    else:
+        for k in keys:
+            if k in variables:
+                out.print(f"{k}={value_of(k)}", markup=False, highlight=False)
+    for k in missing:
+        err.print(f"[yellow]{k} is not set on {app.name}.[/yellow]")
+    if missing:
+        raise SystemExit(1)
 
 
 def _config_var_index(client, app: App) -> dict[str, str]:
