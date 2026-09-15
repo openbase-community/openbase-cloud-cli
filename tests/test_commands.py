@@ -202,16 +202,31 @@ def test_config_hides_secrets(logged_in):
 
 
 @respx.mock
-def test_config_full_listing_requires_confirm_when_non_interactive(logged_in):
+def test_config_full_listing_warns_but_proceeds_when_non_interactive(logged_in):
     _mock_dashboard()
     route = respx.get(f"{API}/resources/res-1/config-vars/").mock(
-        return_value=httpx.Response(200, json=[])
+        return_value=httpx.Response(
+            200, json=[{"key": "DEBUG", "is_secret": False, "value": "false"}]
+        )
     )
     result = CliRunner().invoke(main, ["config", "-a", "api"])
-    assert result.exit_code != 0
-    assert "config get" in result.output
-    assert "--confirm" in result.output
-    assert not route.called  # refused before touching the API
+    assert result.exit_code == 0, result.output
+    assert "Deprecated" in result.output and "config get" in result.output
+    assert "DEBUG" in result.output and "false" in result.output
+    assert route.called
+
+
+@respx.mock
+def test_config_full_listing_with_confirm_does_not_warn(logged_in):
+    _mock_dashboard()
+    respx.get(f"{API}/resources/res-1/config-vars/").mock(
+        return_value=httpx.Response(
+            200, json=[{"key": "DEBUG", "is_secret": False, "value": "false"}]
+        )
+    )
+    result = CliRunner().invoke(main, ["config", "-a", "api", "--confirm"])
+    assert result.exit_code == 0, result.output
+    assert "Deprecated" not in result.output
 
 
 @respx.mock

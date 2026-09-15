@@ -51,8 +51,9 @@ def config(ctx: click.Context, app_name: str | None, as_json: bool, confirmed: b
     back here; values set with ``config set --secret`` (or as secrets in the
     dashboard) are write-only and show as a placeholder.
 
-    The full listing asks for confirmation (pass ``--confirm`` to skip, which
-    is required when running non-interactively).
+    The full listing asks for confirmation on a terminal; pass ``--confirm``
+    to skip. Non-interactive runs without ``--confirm`` currently proceed
+    with a deprecation warning and will become an error in a future release.
     """
     if ctx.invoked_subcommand is not None:
         return
@@ -62,8 +63,11 @@ def config(ctx: click.Context, app_name: str | None, as_json: bool, confirmed: b
             if not click.confirm("Are you SURE you want the full listing?"):
                 raise click.Abort()
         else:
-            raise click.UsageError(
-                _FULL_LISTING_WARNING + " To list everything anyway, pass --confirm."
+            err.print(
+                "[yellow]Deprecated:[/yellow] listing ALL config vars without --confirm. "
+                + _FULL_LISTING_WARNING
+                + " Non-interactive full listings will require --confirm in a "
+                "future release."
             )
     client = make_client()
     app = resolve_app(client, app_name or "")

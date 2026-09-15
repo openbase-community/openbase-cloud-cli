@@ -12,8 +12,9 @@ in the [dashboard](https://app.openbase.cloud).
 only those values, so nothing else can end up in your terminal, logs, shell
 history, or anything you paste elsewhere. The full listing dumps every var —
 including all plaintext values — in one output, so it asks for confirmation
-first; pass `--confirm` to skip the prompt (required when running
-non-interactively, e.g. from scripts or agents).
+first; pass `--confirm` to skip the prompt. Non-interactive runs (scripts,
+agents) without `--confirm` currently proceed with a deprecation warning on
+stderr; in a future release `--confirm` will be required there.
 
 ## Usage
 
@@ -66,7 +67,10 @@ A single full-listing output holds every plaintext value the app has. Copied
 into a chat message, a CI log, or a bug report, one accidental paste exposes
 them all at once — whereas `config get` bounds any such accident to the keys
 you actually asked for. The prompt exists to push routine usage toward
-`config get`; `--confirm` keeps deliberate full listings scriptable.
+`config get`; `--confirm` keeps deliberate full listings scriptable. For
+backwards compatibility, non-interactive listings without `--confirm` still
+run today (with a deprecation warning) — update scripts now, before the
+warning becomes an error.
 
 ## Related
 

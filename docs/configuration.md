@@ -63,9 +63,10 @@ tool authenticates both. `openbase logout` removes it. See
 
 Most read commands accept `--json` for scripting. Secret config values are never
 returned by the API; in `openbase config get --json` (and the full listing) they
-appear as `null`. The full config listing prompts for confirmation, so scripts
-must pass `--confirm` — or better, request only the keys they need with
-`config get`.
+appear as `null`. The full config listing prompts for confirmation on a
+terminal and warns (deprecation) when run non-interactively without
+`--confirm` — pass `--confirm`, or better, request only the keys you need
+with `config get`.
 
 ```bash
 openbase apps --json
