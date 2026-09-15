@@ -69,7 +69,7 @@ openbase apps
 openbase ps -a my-app
 openbase logs -a my-app --tail
 openbase run -a my-app python manage.py check
-openbase config -a my-app
+openbase config get -a my-app SOME_KEY
 openbase releases -a my-app
 
 # Account-wide

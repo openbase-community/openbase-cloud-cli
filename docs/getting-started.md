@@ -58,7 +58,8 @@ openbase ps -a my-app           # current stack status (alias: status)
 openbase logs -a my-app         # recent logs (last 15 min by default)
 openbase logs -a my-app --tail  # stream new lines (Ctrl-C to stop)
 openbase run -a my-app python manage.py migrate  # one-off command
-openbase config -a my-app       # config vars (secret values hidden)
+openbase config get -a my-app KEY # one config var's value (preferred)
+openbase config -a my-app       # ALL config vars (asks for confirmation)
 openbase config set -a my-app K=V # set a plaintext var (redeploys)
 openbase releases -a my-app     # recent deploy runs
 openbase open -a my-app         # open the app's URL in your browser
