@@ -56,6 +56,8 @@ terminal path to the same account and apps.
 | Command | Description |
 |---|---|
 | [`coder`](coder.md) | Run any `openbase-coder` command: `openbase coder <args>` |
+| [`codex`](coder.md#agent-sessions-openbase-codex-and-openbase-claude) | Start Codex with Openbase's profile (runs `openbase-coder codex`) |
+| [`claude`](coder.md#agent-sessions-openbase-codex-and-openbase-claude) | Start Claude Code with Openbase's profile (runs `openbase-coder claude`) |
 
 ## Common Examples
 

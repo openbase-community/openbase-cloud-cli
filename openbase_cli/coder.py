@@ -9,8 +9,10 @@ straight through to it.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
+import sys
 
 CODER_EXECUTABLE = "openbase-coder"
 
@@ -36,3 +38,20 @@ def run_coder(args: list[str]) -> int:
     """Run ``openbase-coder <args>`` inheriting stdio; return its exit code."""
     completed = subprocess.run([coder_path(), *args], check=False)
     return completed.returncode
+
+
+def exec_coder(args: list[str]) -> int:
+    """Replace this process with ``openbase-coder <args>``.
+
+    Used for interactive agent sessions (``openbase codex|claude``): exec
+    hands the terminal, signals and exit status straight to openbase-coder
+    instead of keeping a Python parent in between. Windows has no real exec,
+    so it waits for a child there instead.
+    """
+    path = coder_path()
+    if sys.platform == "win32":
+        return run_coder(args)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os.execv(path, [path, *args])
+    return 0  # pragma: no cover - execv does not return

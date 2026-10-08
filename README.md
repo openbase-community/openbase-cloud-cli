@@ -67,6 +67,12 @@ Anything not covered here can be run against the Coder CLI directly:
 openbase coder <args>       # runs `openbase-coder <args>`
 ```
 
+`openbase codex` and `openbase claude` start Codex or Claude Code with
+Openbase's session profile (they run `openbase-coder codex|claude`), so the
+session shows up in the Openbase app and can be steered from your phone. On a
+laptop paired with a hub through Openbase Sync, they run the session on the
+hub; `--local` keeps it on the laptop.
+
 ## Configuration
 
 | Variable | Purpose | Default |

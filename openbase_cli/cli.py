@@ -3,8 +3,9 @@
 A Heroku-style client for the Openbase Cloud PaaS and an alternative to the web
 dashboard: sign in once, then read your apps, logs, config, releases, usage,
 projects, and workspaces from the terminal. It speaks only HTTPS to the
-Openbase Cloud API. Login and devspace/agent features are delegated to the
-separate ``openbase-coder`` CLI.
+Openbase Cloud API. Login, devspace/agent features and the ``codex`` /
+``claude`` session launchers are delegated to the separate ``openbase-coder``
+CLI.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ import click
 
 from openbase_cli.commands.access_commands import access
 from openbase_cli.commands.account_commands import account
+from openbase_cli.commands.agent_commands import claude, codex
 from openbase_cli.commands.apps_commands import apps, open_app
 from openbase_cli.commands.auth_commands import coder, login, logout, whoami
 from openbase_cli.commands.config_commands import config as config_cmd
@@ -48,6 +50,10 @@ def main() -> None:
       openbase usage
 
       openbase coder devspaces status
+
+      openbase codex          (Codex with Openbase's profile)
+
+      openbase claude         (Claude Code with Openbase's profile)
     """
 
 
@@ -57,6 +63,10 @@ main.add_command(logout)
 main.add_command(whoami)
 main.add_command(account)
 main.add_command(coder)
+
+# Agent sessions with Openbase's profile (delegate to openbase-coder)
+main.add_command(codex)
+main.add_command(claude)
 
 # Apps / deploys
 main.add_command(apps)
