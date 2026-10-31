@@ -220,7 +220,9 @@ def _target_release(
 
     The API returns newest first. A newer run for the same operation and ref
     means live state no longer belongs to the requested commit, even if that
-    older run once succeeded.
+    older run once succeeded. Superseded runs never started, so they are not
+    newer live state: the PaaS coalesces a burst of pushes by head commit
+    timestamp, which can supersede a later push in favor of an earlier one.
     """
     target_index = next(
         (
@@ -241,6 +243,7 @@ def _target_release(
             if run.get("operation") == operation
             and str(run.get("git_ref") or "") == target_ref
             and run.get("commit_sha") != commit_sha
+            and run.get("status") != "superseded"
         ),
         None,
     )

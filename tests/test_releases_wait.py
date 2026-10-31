@@ -104,6 +104,31 @@ def test_wait_fails_when_target_was_overtaken(logged_in):
 
 
 @respx.mock
+def test_wait_ignores_superseded_newer_run(logged_in):
+    _mock_dashboard()
+    superseded_sha = "c" * 40
+    respx.get(f"{API}/resources/res-1/runs/").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                _run(
+                    "superseded",
+                    id="run-2",
+                    commit_sha=superseded_sha,
+                    summary="Superseded by a newer push before deployment started.",
+                ),
+                _run("succeeded"),
+            ],
+        )
+    )
+
+    result = _invoke()
+
+    assert result.exit_code == 0, result.output
+    assert "succeeded" in result.output
+
+
+@respx.mock
 def test_wait_verifies_live_ecs_rollout(logged_in):
     _mock_dashboard()
     runs = respx.get(f"{API}/resources/res-1/runs/").mock(
