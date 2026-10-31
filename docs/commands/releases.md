@@ -13,9 +13,12 @@ openbase releases -a my-app --json
 FULL_COMMIT_SHA="$(git rev-parse HEAD)"
 openbase releases wait -a my-app --commit "$FULL_COMMIT_SHA" --operation deploy
 openbase releases wait -a my-app --commit "$FULL_COMMIT_SHA" --operation deploy --verify-rollout
+openbase releases wait -a my-app --commit "$SHA_PUSHED_FIRST" --commit "$SHA_PUSHED_SECOND" --operation deploy
 ```
 
 `releases wait` matches the full commit SHA and operation. It exits successfully only when that release succeeds; a failed, superseded, overtaken, or timed-out release exits nonzero. Use `--operation frontend_deploy` for an attached frontend-only release.
+
+Repeat `--commit` when one burst of pushes (for example a multi-repo promotion) triggers the same operation several times. The platform coalesces such a burst and may supersede some of the pushes; the wait follows the newest release among the given commits that was not superseded, and still fails if a push outside the set overtakes them.
 
 Server deploys start ECS asynchronously after CodeBuild. Add `--verify-rollout` to wait until every reported ECS service is running the expected image, has completed its rollout, has its desired task count, and has no pending tasks.
 
@@ -47,7 +50,7 @@ Attribution comes from the caller's agent/thread ID. Codex is detected automatic
 | Option | Description | Default |
 |---|---|---|
 | `-a`, `--app NAME` | Target app (or set `OPENBASE_APP`) | — |
-| `--commit SHA` | Full commit SHA to wait for | required |
+| `--commit SHA` | Full commit SHA to wait for; repeatable for a burst of pushes | required |
 | `--operation deploy\|frontend_deploy` | Release operation triggered by the commit | required |
 | `--verify-rollout` | Verify the expected image and live ECS rollout after release success | off |
 | `--timeout SECONDS` | Maximum wait time | `1800` |

@@ -129,6 +129,60 @@ def test_wait_ignores_superseded_newer_run(logged_in):
 
 
 @respx.mock
+def test_wait_follows_the_release_the_platform_keeps(logged_in, monkeypatch):
+    _mock_dashboard()
+    monkeypatch.setattr("openbase_cli.commands.releases_commands.time.sleep", lambda _delay: None)
+    later_sha = "d" * 40
+    respx.get(f"{API}/resources/res-1/runs/").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=[
+                    _run("pending", id="run-2", commit_sha=later_sha),
+                    _run("succeeded"),
+                ],
+            ),
+            httpx.Response(
+                200,
+                json=[
+                    _run("succeeded", id="run-2", commit_sha=later_sha),
+                    _run("succeeded"),
+                ],
+            ),
+        ]
+    )
+
+    result = _invoke("--commit", later_sha)
+
+    assert result.exit_code == 0, result.output
+    assert "release run-2 is pending" in result.output
+    assert f"Release {later_sha[:12]} succeeded" in result.output
+
+
+@respx.mock
+def test_wait_burst_still_fails_when_a_foreign_push_overtakes(logged_in):
+    _mock_dashboard()
+    later_sha = "d" * 40
+    foreign_sha = "e" * 40
+    respx.get(f"{API}/resources/res-1/runs/").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                _run("started", id="run-3", commit_sha=foreign_sha),
+                _run("succeeded", id="run-2", commit_sha=later_sha),
+                _run("succeeded"),
+            ],
+        )
+    )
+
+    result = _invoke("--commit", later_sha)
+
+    assert result.exit_code == 1
+    assert "overtaken" in result.output
+    assert foreign_sha[:12] in result.output
+
+
+@respx.mock
 def test_wait_verifies_live_ecs_rollout(logged_in):
     _mock_dashboard()
     runs = respx.get(f"{API}/resources/res-1/runs/").mock(
